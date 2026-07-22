@@ -1,4 +1,28 @@
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+// Install Banner Logic (Always show if browser permits, no 24hr block)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').classList.remove('hidden');
+});
+
+document.getElementById('btn-install').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            document.getElementById('install-banner').classList.add('hidden');
+        }
+        deferredPrompt = null;
+    }
+});
+
+document.getElementById('btn-close-install').addEventListener('click', () => {
+    // Just hides for this session, will come back on refresh if not installed
+    document.getElementById('install-banner').classList.add('hidden');
+});
+
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
 
 // ==================== CLOUD DATABASE HELPERS ==================== //
 const getDB = async (key) => {
@@ -24,7 +48,7 @@ function toggleDarkMode(checkbox) {
 }
 applyTheme();
 
-// ==================== INITIALIZE CLOUD DB & AUTO-LOGIN ==================== //
+// ==================== INITIALIZE DB & AUTO-LOGIN ==================== //
 async function initDB() {
     try {
         const users = await getDB('mt_users');
@@ -41,12 +65,9 @@ async function initDB() {
             await saveDB('mt_payments', []);
             await saveDB('mt_meal_records', {});
         }
-    } catch(err) {
-        console.error("Initialization error: ", err);
-    }
+    } catch(err) { console.error("Initialization error: ", err); }
 }
 
-// Auto-Login Check Function
 async function checkSession() {
     const savedId = localStorage.getItem('mt_session_id');
     const savedRole = localStorage.getItem('mt_session_role');
@@ -55,17 +76,12 @@ async function checkSession() {
         try {
             const users = await getDB('mt_users');
             if (users[savedId] && users[savedId].role === savedRole) {
-                // User found, restore session
                 currentUser = { id: savedId, ...users[savedId] };
                 loginRole = savedRole;
                 
-                // Set UI Tabs correctly
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                if(savedRole === 'student') {
-                    document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-                } else {
-                    document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-                }
+                if(savedRole === 'student') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
 
                 if (loginRole === 'student') {
                     if (currentUser.firstLogin) navigate('first-login-section');
@@ -74,20 +90,14 @@ async function checkSession() {
                     await loadManagerDashboard(); navigate('manager-dashboard');
                 }
             } else {
-                // If data is changed or invalid, clear session
                 localStorage.removeItem('mt_session_id');
                 localStorage.removeItem('mt_session_role');
             }
-        } catch(err) {
-            console.error("Session check failed: ", err);
-        }
+        } catch(err) { console.error("Session check failed: ", err); }
     }
 }
 
-// Load DB first, then check if user is already logged in
-initDB().then(() => {
-    checkSession();
-});
+initDB().then(() => { checkSession(); });
 
 // ==================== NAV & AUTH ==================== //
 let loginRole = 'student';
@@ -113,21 +123,16 @@ function setLoginType(type, btn) {
     else regLink.classList.add('hidden');
 }
 
-// LOGOUT CONFIRMATION & CLEAR SESSION
 function logout() { 
     if(confirm("Are you sure you want to log out?")) {
         currentUser = null; 
-        
-        // Remove session from phone
         localStorage.removeItem('mt_session_id');
         localStorage.removeItem('mt_session_role');
-
         navigate('login-section'); 
         document.getElementById('login-form').reset(); 
     }
 }
 
-// PASSWORD CHANGE MODAL LOGIC
 function openPasswordModal() {
     document.getElementById('password-modal').classList.remove('hidden');
     document.getElementById('old-pass').value = '';
@@ -142,19 +147,14 @@ async function saveNewPassword() {
 
     try {
         const users = await getDB('mt_users');
-        if(users[currentUser.id].password !== oldP) {
-            return alert("Incorrect Current Password!");
-        }
+        if(users[currentUser.id].password !== oldP) return alert("Incorrect Current Password!");
         users[currentUser.id].password = newP;
         await saveDB('mt_users', users);
         alert("Password updated successfully!");
         closePasswordModal();
-    } catch(err) {
-        alert("Error updating password: " + err.message);
-    }
+    } catch(err) { alert("Error: " + err.message); }
 }
 
-// LOGIN LOGIC (With Session Save)
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('login-id').value.trim();
@@ -164,11 +164,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     
     try {
         const users = await getDB('mt_users');
-        
         if (users[id] && users[id].password === pass && users[id].role === loginRole) {
             currentUser = { id, ...users[id] };
-            
-            // SAVE SESSION FOR AUTO-LOGIN AFTER REFRESH
             localStorage.setItem('mt_session_id', id);
             localStorage.setItem('mt_session_role', loginRole);
 
@@ -178,33 +175,24 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             } else {
                 await loadManagerDashboard(); navigate('manager-dashboard');
             }
-        } else { 
-            alert('Invalid ID or Password!'); 
-        }
-    } catch(err) {
-        alert("Database Error! " + err.message);
-    } finally {
-        btn.innerText = "Login";
-    }
+        } else { alert('Invalid ID or Password!'); }
+    } catch(err) { alert("Database Error! " + err.message); } 
+    finally { btn.innerText = "Login"; }
 });
 
-// FIRST LOGIN PASS SET
 document.getElementById('first-login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const newPass = document.getElementById('new-first-pass').value.trim();
     const users = await getDB('mt_users');
-    
     users[currentUser.id].password = newPass;
     users[currentUser.id].firstLogin = false;
     await saveDB('mt_users', users);
     currentUser.firstLogin = false;
-    
     alert('Password updated successfully!');
     await loadStudentDashboard();
     navigate('student-dashboard');
 });
 
-// ==================== NEW MANAGER REGISTRATION ==================== //
 document.getElementById('manager-register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const mgrName = document.getElementById('reg-mgr-name').value.trim();
@@ -216,18 +204,14 @@ document.getElementById('manager-register-form').addEventListener('submit', asyn
     try {
         const users = await getDB('mt_users');
         let isHostelTaken = false;
-        
         for(let key in users) {
             if(users[key].role === 'manager' && users[key].hostel.toLowerCase() === hostelName.toLowerCase()) {
-                isHostelTaken = true;
-                break;
+                isHostelTaken = true; break;
             }
         }
-
         if(isHostelTaken) {
-            alert(`Error: '${hostelName}' naam ka hostel pehle se kisi aur manager ne register kar rakha hai. Koi doosra naam chunein.`);
-            btn.innerText = "Register Now";
-            return;
+            alert(`Error: '${hostelName}' is already taken.`);
+            btn.innerText = "Register Now"; return;
         }
 
         const newMgrId = 'MGR' + Math.floor(1000 + Math.random() * 9000);
@@ -238,17 +222,12 @@ document.getElementById('manager-register-form').addEventListener('submit', asyn
         settings[hostelName] = { meals: { B: 30, L: 50, D: 50 } };
         await saveDB('mt_settings', settings);
 
-        alert(`Congratulations! Aapka naya hostel ban gaya hai.\nAapka Manager ID hai: ${newMgrId}\nKripya ise likh lein aur is ID se login karein.`);
+        alert(`Success!\nYour Manager ID is: ${newMgrId}\nPlease save it for login.`);
         document.getElementById('manager-register-form').reset();
         navigate('login-section');
-
-    } catch (err) {
-        alert("Registration Error: " + err.message);
-    } finally {
-        btn.innerText = "Register Now";
-    }
+    } catch (err) { alert("Error: " + err.message); } 
+    finally { btn.innerText = "Register Now"; }
 });
-
 
 // ==================== STUDENT DASHBOARD ==================== //
 async function switchStudentTab(tabName, btn) {
@@ -324,8 +303,6 @@ function uploadProfilePic(event) {
     }
 }
 
-
-// ==================== CALENDAR LOGIC ==================== //
 async function changeMonth(step) { 
     currentCalDate.setMonth(currentCalDate.getMonth() + step); 
     await renderCalendar(); 
@@ -416,7 +393,6 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
 });
 
 // ==================== MANAGER DASHBOARD ==================== //
-
 function switchManagerTab(tabName, btn) {
     document.querySelectorAll('.mgr-tab').forEach(t => { t.classList.add('hidden'); t.classList.remove('active'); });
     document.getElementById(`mgr-tab-${tabName}`).classList.remove('hidden');
@@ -444,7 +420,7 @@ async function loadManagerDashboard() {
     tbodyManager.innerHTML = '';
     document.getElementById('mgr-hostel-display').innerText = currentUser.hostel || 'Hostel';
 
-     for (let key in users) {
+    for (let key in users) {
         if (users[key].role === 'student' && users[key].hostel === currentUser.hostel) {
             let totalPaid = 0;
             let lastDate = 'N/A';
@@ -473,6 +449,7 @@ async function loadManagerDashboard() {
                 </tr>`;
         }
     }
+
     const myPending = payments.filter(p => p.status === 'pending' && users[p.studentId] && users[p.studentId].hostel === currentUser.hostel);
     const pendingCard = document.getElementById('pending-card');
     if (myPending.length > 0) {
@@ -484,19 +461,17 @@ async function loadManagerDashboard() {
 document.getElementById('settings-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const settings = await getDB('mt_settings');
-    
     if(!settings[currentUser.hostel]) settings[currentUser.hostel] = { meals: {} };
-    
     settings[currentUser.hostel].meals = {
         B: Number(document.getElementById('cost-b').value),
         L: Number(document.getElementById('cost-l').value),
         D: Number(document.getElementById('cost-d').value)
     };
-    
     await saveDB('mt_settings', settings);
     alert('Costs Updated!');
     await loadManagerDashboard();
 });
+
 document.getElementById('add-student-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('stu-name').value;
@@ -531,6 +506,7 @@ async function showVerificationList() {
             </div>`;
     });
 }
+
 async function verifyPayment(paymentId) {
     const payments = await getDB('mt_payments'); 
     const users = await getDB('mt_users');
