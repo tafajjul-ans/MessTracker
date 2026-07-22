@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MessTracker</title>
-    
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="./image/icon-192.png">
     <link rel="apple-touch-icon" href="./image/icon-192.png">
-
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -71,6 +69,22 @@
             </div>
         </section>
 
+        <!-- REGISTRATION SUCCESS SCREEN -->
+        <section id="registration-success-section" class="page hidden">
+            <div class="card login-card" style="border: 2px solid var(--success);">
+                <h2 style="color: var(--success);"><i class="fas fa-check-circle"></i> Success!</h2>
+                <p style="color: var(--danger); font-weight: bold; margin-bottom: 15px;">⚠️ Important Instruction ⚠️<br><span style="color:var(--text-main); font-weight:normal;">Niche di gayi ID aur Password ko Copy karke kahin safe jagah likh lijiye. Agar aap bhool gaye toh login nahi hoga!</span></p>
+                
+                <div style="background: var(--calendar-day-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed var(--primary);">
+                    <p>Manager ID: <strong id="success-id" style="font-size: 18px; color: var(--primary);">---</strong></p>
+                    <p>Password: <strong id="success-pass" style="font-size: 18px; color: var(--primary);">---</strong></p>
+                </div>
+                
+                <button onclick="copyDetails()" class="btn-primary" style="margin-bottom: 10px; background: #6366f1;"><i class="fas fa-copy"></i> Copy Details</button>
+                <button onclick="navigate('login-section')" class="btn-primary btn-success" style="background: var(--success);">Go to Login</button>
+            </div>
+        </section>
+
         <!-- FIRST TIME PASSWORD SET -->
         <section id="first-login-section" class="page hidden">
             <div class="card login-card">
@@ -115,7 +129,10 @@
                                 <input type="text" id="stu-mobile" placeholder="Mobile Number" required>
                                 <button type="submit" class="btn-primary btn-small">Generate ID</button>
                             </form>
-                            <p id="generated-id-msg" class="success-msg"></p>
+                            <div id="generated-id-box" class="hidden" style="margin-top:15px; padding:10px; background:var(--calendar-day-bg); border-radius:5px; border:1px solid var(--success); text-align:center;">
+                                <p id="generated-id-msg" style="color:var(--success); font-weight:bold; margin-bottom:5px;"></p>
+                                <button onclick="copyStudentId()" class="btn-small btn-primary" style="background:#6366f1;"><i class="fas fa-copy"></i> Copy</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -123,7 +140,7 @@
                     <h3 style="margin-bottom: 10px;"><i class="fas fa-users"></i> Record Book</h3>
                     <div class="notebook-wrapper">
                         <table class="notebook-table">
-                            <thead><tr><th>Student</th><th>Due</th><th>Paid</th><th>Date</th></tr></thead>
+                            <thead><tr><th>Student</th><th>Due</th><th>Paid</th><th>Action</th></tr></thead>
                             <tbody id="mgr-notebook-list"></tbody>
                         </table>
                     </div>
@@ -186,6 +203,8 @@
                     <div class="card profile-card">
                         <div class="profile-img-container">
                             <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="profile-img-display" class="profile-img">
+                            <button class="edit-pic-btn" onclick="document.getElementById('profile-upload').click()"><i class="fas fa-camera"></i></button>
+                            <input type="file" id="profile-upload" accept="image/*" hidden onchange="uploadProfilePic(event)">
                         </div>
                         <h3 id="profile-name">Name</h3>
                         <p>ID: <strong id="profile-id">---</strong></p>
@@ -212,4 +231,5 @@
     <script src="./firebase.js"></script>
     <script src="./app.js"></script>
 </body>
-</html>
+    </html>
+    
