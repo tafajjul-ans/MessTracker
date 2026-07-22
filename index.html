@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mess-Tracker (MT)</title>
+    <title>MessTracker</title>
     
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Icon ke liye naye links -->
-    <link rel="icon" type="image/png" href="image/icon-192.png">
-    <link rel="apple-touch-icon" href="image/icon-192.png">
-    
-    <link rel="stylesheet" href="style.css">
+    <!-- PWA Links -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./image/icon-192.png">
+    <link rel="apple-touch-icon" href="./image/icon-192.png">
+
+    <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="light-theme">
+    
+    <!-- Install Banner -->
     <div id="install-banner" class="hidden">
-        <span><i class="fas fa-download"></i> Install MT App</span>
+        <span><i class="fas fa-download"></i> Install MessTracker</span>
         <div>
             <button id="btn-install" class="btn-small">Install</button>
             <button id="btn-close-install" class="btn-small btn-danger"><i class="fas fa-times"></i></button>
         </div>
     </div>
 
-    <!-- Password Change Modal -->
+    <!-- Password Modal -->
     <div id="password-modal" class="modal hidden">
         <div class="modal-content card">
             <h3><i class="fas fa-key"></i> Change Password</h3>
@@ -51,7 +52,6 @@
                     <input type="password" id="login-pass" placeholder="Enter Password" required>
                     <button type="submit" class="btn-primary">Login</button>
                 </form>
-                <!-- Manager Register Link -->
                 <div id="register-link-container" class="hidden" style="margin-top: 20px;">
                     <a href="#" onclick="navigate('manager-register-section')" style="color: var(--primary); font-size: 14px; font-weight: bold; text-decoration: none;">+ Register New Manager / Hostel</a>
                 </div>
@@ -148,7 +148,7 @@
                                 </tr>
                             </thead>
                             <tbody id="mgr-notebook-list">
-                                <!-- JS will populate this notebook table -->
+                                <!-- Populated via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -165,7 +165,7 @@
             </nav>
         </section>
 
-        <!-- VERIFICATION PAGE (Manager) -->
+        <!-- VERIFICATION PAGE -->
         <section id="verification-page" class="page hidden">
             <header class="app-header">
                 <button onclick="navigate('manager-dashboard'); switchManagerTab('home', document.querySelector('.bottom-nav .nav-item:nth-child(1)'))" class="btn-icon"><i class="fas fa-arrow-left"></i></button>
@@ -183,7 +183,7 @@
             </header>
             
             <div class="student-content content">
-                <!-- TAB 1: HOME (Calendar) -->
+                <!-- TAB 1: HOME -->
                 <div id="stu-tab-home" class="stu-tab active">
                     <div class="card">
                         <div class="calendar-header">
@@ -193,7 +193,7 @@
                         </div>
                         <div class="calendar-grid" id="calendar-days"></div>
                         <div class="tips-box mt-2">
-                            <small><b>Tips:</b> Tap a date to mark your meals. Green means selected.</small><br>
+                            <small><b>Tips:</b> Tap a date to mark your meals.</small><br>
                             <small><span class="meal-badge">B</span>=Breakfast, <span class="meal-badge">L</span>=Lunch, <span class="meal-badge">D</span>=Dinner</small>
                         </div>
                     </div>
@@ -228,13 +228,11 @@
                     <div class="card">
                         <h3><i class="fas fa-users"></i> Hostel Mates</h3>
                         <p class="text-muted" style="margin-bottom: 15px; font-size:14px;">Members of <span id="stu-hostel-display" style="font-weight:bold;">---</span></p>
-                        <div id="stu-members-list" class="members-grid">
-                            <!-- Populated via JS (IDs are hidden) -->
-                        </div>
+                        <div id="stu-members-list" class="members-grid"></div>
                     </div>
                 </div>
 
-                <!-- TAB 4: PROFILE & SETTINGS -->
+                <!-- TAB 4: PROFILE -->
                 <div id="stu-tab-profile" class="stu-tab hidden">
                     <div class="card profile-card">
                         <div class="profile-img-container">
@@ -276,14 +274,11 @@
             </nav>
         </section>
     </div>
-       <!-- 1. Pehle Firebase SDK -->
+
+    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
-    <!-- 2. Phir aapki Firebase Setup File -->
-    <script src="firebase.js"></script>
-
-    <!-- 3. Aur end me aapki App Logic File -->
-    <script src="app.js"></script>
+    <script src="./firebase.js"></script>
+    <script src="./app.js"></script>
 </body>
 </html>
