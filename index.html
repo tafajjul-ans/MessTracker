@@ -32,6 +32,17 @@
         </div>
     </div>
 
+    <!-- Manager Contact Modal (For Students) -->
+    <div id="manager-contact-modal" class="modal hidden">
+        <div class="modal-content card" style="text-align: center;">
+            <img src="" id="modal-mgr-pic" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px; border: 2px solid var(--primary);">
+            <h3 id="modal-mgr-name">Manager Name</h3>
+            <p class="text-muted" style="margin-bottom: 15px;">Hostel Manager</p>
+            <p style="font-size: 16px; margin-bottom: 20px;"><i class="fas fa-phone" style="color: var(--primary);"></i> <a href="" id="modal-mgr-phone-link" style="color: var(--text-main); text-decoration: none; font-weight: bold;">---</a></p>
+            <button onclick="document.getElementById('manager-contact-modal').classList.add('hidden')" class="btn-primary btn-small">Close</button>
+        </div>
+    </div>
+
     <div class="app-container">
         
         <!-- LOGIN SECTION -->
@@ -62,6 +73,7 @@
                 <form id="manager-register-form">
                     <input type="text" id="reg-mgr-name" placeholder="Your Name (Manager)" required>
                     <input type="text" id="reg-hostel-name" placeholder="Hostel Name (Must be Unique)" required>
+                    <input type="tel" id="reg-mgr-mobile" placeholder="Mobile Number" required>
                     <input type="password" id="reg-mgr-pass" placeholder="Create Secure Password" required>
                     <button type="submit" class="btn-primary">Register Now</button>
                     <p style="margin-top:15px; cursor:pointer; color:var(--text-muted); font-size:14px; font-weight:bold;" onclick="navigate('login-section')">Back to Login</p>
@@ -104,6 +116,8 @@
                 <button onclick="logout()" class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
             </header>
             <div class="manager-content content">
+                
+                <!-- TAB 1: HOME -->
                 <div id="mgr-tab-home" class="mgr-tab active">
                     <div id="pending-card" class="card highlight-card hidden" onclick="showVerificationList()">
                         <div class="card-icon"><i class="fas fa-clock"></i></div>
@@ -119,8 +133,6 @@
                                 <label>Dinner (₹):</label><input type="number" id="cost-d">
                                 <button type="submit" class="btn-primary btn-small">Update</button>
                             </form>
-                            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border);">
-                            <button onclick="openPasswordModal()" class="btn-primary btn-small" style="background:#6366f1;"><i class="fas fa-key"></i> Change My Password</button>
                         </div>
                         <div class="card">
                             <h3>Add New Student</h3>
@@ -136,19 +148,54 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- TAB 2: RECORD BOOK -->
                 <div id="mgr-tab-members" class="mgr-tab hidden">
                     <h3 style="margin-bottom: 10px;"><i class="fas fa-users"></i> Record Book</h3>
                     <div class="notebook-wrapper">
                         <table class="notebook-table">
-                            <thead><tr><th>Student</th><th>Due</th><th>Paid</th><th>Action</th></tr></thead>
+                            <thead><tr><th>#</th><th>Student</th><th>Due</th><th>Paid</th><th>Action</th></tr></thead>
                             <tbody id="mgr-notebook-list"></tbody>
                         </table>
                     </div>
                 </div>
+
+                <!-- TAB 3: MANAGER PROFILE & SETTINGS -->
+                <div id="mgr-tab-profile" class="mgr-tab hidden">
+                    <div class="card profile-card">
+                        <div class="profile-img-container">
+                            <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="mgr-profile-img-display" alt="Profile" class="profile-img">
+                            <button class="edit-pic-btn" onclick="document.getElementById('mgr-profile-upload').click()"><i class="fas fa-camera"></i></button>
+                            <input type="file" id="mgr-profile-upload" accept="image/*" hidden onchange="uploadMgrProfilePic(event)">
+                        </div>
+                        <h3 id="mgr-profile-name">Manager Name</h3>
+                        <p>ID: <strong id="mgr-profile-id">---</strong></p>
+                        <p><i class="fas fa-phone"></i> <span id="mgr-profile-mob">---</span></p>
+                    </div>
+                    <div class="card mt-2 settings-menu">
+                        <h3><i class="fas fa-cog"></i> Settings</h3>
+                        <div class="setting-item">
+                            <span><i class="fas fa-moon"></i> Dark Mode</span>
+                            <label class="switch">
+                                <input type="checkbox" id="mgr-dark-mode-toggle" onchange="toggleDarkMode(this)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item" style="cursor:pointer;" onclick="openPasswordModal()">
+                            <span class="text-main"><i class="fas fa-key"></i> Change Password</span>
+                        </div>
+                        <div class="setting-item" style="cursor:pointer;" onclick="logout()">
+                            <span class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
             <nav class="bottom-nav">
                 <button class="nav-item active" onclick="switchManagerTab('home', this)"><i class="fas fa-chart-pie"></i><span>Panel</span></button>
                 <button class="nav-item" onclick="switchManagerTab('members', this)"><i class="fas fa-book-open"></i><span>Record Book</span></button>
+                <button class="nav-item" onclick="switchManagerTab('profile', this)"><i class="fas fa-user"></i><span>Profile</span></button>
             </nav>
         </section>
 
@@ -197,7 +244,11 @@
                     </div>
                 </div>
                 <div id="stu-tab-members" class="stu-tab hidden">
-                    <div class="card"><div id="stu-members-list" class="members-grid"></div></div>
+                    <div class="card">
+                        <h3><i class="fas fa-users"></i> Hostel Directory</h3>
+                        <p class="text-muted" style="font-size: 13px; margin-bottom: 15px;">Tap on Manager card to connect.</p>
+                        <div id="stu-members-list" class="members-grid"></div>
+                    </div>
                 </div>
                 <div id="stu-tab-profile" class="stu-tab hidden">
                     <div class="card profile-card">
@@ -231,5 +282,4 @@
     <script src="./firebase.js"></script>
     <script src="./app.js"></script>
 </body>
-    </html>
-    
+</html>
