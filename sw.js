@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mt-app-v3';
+const CACHE_NAME = 'mt-app-v4';
 
 // Sirf 3 main files cache karenge taaki image path ki wajah se crash na ho
 const urlsToCache = [
