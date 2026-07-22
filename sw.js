@@ -1,20 +1,19 @@
-const CACHE_NAME = 'mt-app-v4';
+const CACHE_NAME = 'mt-app-v5';
 
-// Sirf 3 main files cache karenge taaki image path ki wajah se crash na ho
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
-  './app.js'
+  './app.js',
+  './firebase.js'
 ];
 
 self.addEventListener('install', event => {
-  self.skipWaiting(); // Turant active karne ke liye
+  self.skipWaiting(); 
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        // Agar koi file missing hui toh bhi install cancel nahi hoga
-        return cache.addAll(urlsToCache).catch(err => console.log("Cache error, but continuing...", err));
+        return cache.addAll(urlsToCache).catch(err => console.log("Cache error ignored", err));
       })
   );
 });
