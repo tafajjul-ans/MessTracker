@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mess-Tracker (MT)</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="light-theme">
+    <div id="install-banner" class="hidden">
+        <span><i class="fas fa-download"></i> Install MT App</span>
+        <div>
+            <button id="btn-install" class="btn-small">Install</button>
+            <button id="btn-close-install" class="btn-small btn-danger"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="password-modal" class="modal hidden">
+        <div class="modal-content card">
+            <h3><i class="fas fa-key"></i> Change Password</h3>
+            <p style="font-size: 14px; margin-bottom: 10px; color: var(--text-muted);">Apna purana aur naya password dalein.</p>
+            <input type="password" id="old-pass" placeholder="Current Password" required>
+            <input type="password" id="new-pass" placeholder="New Password" required>
+            <button onclick="saveNewPassword()" class="btn-primary mt-2">Update Password</button>
+            <button onclick="closePasswordModal()" class="btn-danger btn-primary mt-2" style="background:var(--danger);">Cancel</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- LOGIN SECTION -->
+        <section id="login-section" class="page active">
+            <div class="card login-card">
+                <div class="logo">MT</div>
+                <h2>Welcome Back</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setLoginType('student', this)">Student</button>
+                    <button class="tab-btn" onclick="setLoginType('manager', this)">Manager</button>
+                </div>
+                <form id="login-form">
+                    <input type="text" id="login-id" placeholder="Enter Student ID" required>
+                    <input type="password" id="login-pass" placeholder="Enter Password" required>
+                    <button type="submit" class="btn-primary">Login</button>
+                </form>
+                <!-- Manager Register Link -->
+                <div id="register-link-container" class="hidden" style="margin-top: 20px;">
+                    <a href="#" onclick="navigate('manager-register-section')" style="color: var(--primary); font-size: 14px; font-weight: bold; text-decoration: none;">+ Register New Manager / Hostel</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- MANAGER REGISTRATION SECTION -->
+        <section id="manager-register-section" class="page hidden">
+            <div class="card login-card">
+                <div class="logo"><i class="fas fa-building"></i></div>
+                <h2>New Hostel Setup</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Ek hostel ka sirf ek hi manager ho sakta hai.</p>
+                <form id="manager-register-form">
+                    <input type="text" id="reg-mgr-name" placeholder="Your Name (Manager)" required>
+                    <input type="text" id="reg-hostel-name" placeholder="Hostel Name (Must be Unique)" required>
+                    <input type="password" id="reg-mgr-pass" placeholder="Create Password" required>
+                    <button type="submit" class="btn-primary">Register Now</button>
+                    <p style="margin-top:15px; cursor:pointer; color:var(--text-muted); font-size:14px; font-weight:bold;" onclick="navigate('login-section')">Back to Login</p>
+                </form>
+            </div>
+        </section>
+
+        <!-- FIRST TIME PASSWORD SET (STUDENT) -->
+        <section id="first-login-section" class="page hidden">
+            <div class="card login-card">
+                <h2>Set New Password</h2>
+                <p>Security reason ke liye apna naya password set karein.</p>
+                <form id="first-login-form">
+                    <input type="password" id="new-first-pass" placeholder="New Password" required>
+                    <button type="submit" class="btn-primary">Save & Continue</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- MANAGER DASHBOARD -->
+        <section id="manager-dashboard" class="page hidden">
+            <header class="app-header">
+                <h2><i class="fas fa-user-shield"></i> Manager Panel</h2>
+                <button onclick="logout()" class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
+            </header>
+            
+            <div class="manager-content content">
+                <!-- TAB: DASHBOARD -->
+                <div id="mgr-tab-home" class="mgr-tab active">
+                    <div id="pending-card" class="card highlight-card hidden" onclick="showVerificationList()">
+                        <div class="card-icon"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <h3>Pending Verifications</h3>
+                            <p id="pending-count">0 payments waiting</p>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3><i class="fas fa-cog"></i> Meal Settings</h3>
+                            <p class="text-muted" style="font-size:12px; margin-bottom:10px;">Hostel: <strong id="mgr-settings-hostel-name">---</strong></p>
+                            <form id="settings-form">
+                                <label>Breakfast Cost (₹):</label>
+                                <input type="number" id="cost-b" placeholder="0 if not available">
+                                <label>Lunch Cost (₹):</label>
+                                <input type="number" id="cost-l" placeholder="0 if not available">
+                                <label>Dinner Cost (₹):</label>
+                                <input type="number" id="cost-d" placeholder="0 if not available">
+                                <button type="submit" class="btn-primary btn-small">Update Costs</button>
+                            </form>
+                            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border);">
+                            <button onclick="openPasswordModal()" class="btn-primary btn-small" style="background:#6366f1;"><i class="fas fa-key"></i> Change My Password</button>
+                        </div>
+                        <div class="card">
+                            <h3>Add New Student</h3>
+                            <form id="add-student-form">
+                                <input type="text" id="stu-name" placeholder="Student Name" required>
+                                <input type="text" id="stu-mobile" placeholder="Mobile Number" required>
+                                <button type="submit" class="btn-primary btn-small">Generate ID</button>
+                            </form>
+                            <p id="generated-id-msg" class="success-msg"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: MEMBERS (MANAGER) - Notebook Style -->
+                <div id="mgr-tab-members" class="mgr-tab hidden">
+                    <h3 style="margin-bottom: 10px;"><i class="fas fa-users"></i> Hostel Record Book</h3>
+                    <p class="text-muted" style="margin-bottom: 15px; font-size:14px;">All students in <span id="mgr-hostel-display" style="font-weight:bold;">---</span></p>
+                    
+                    <div class="notebook-wrapper">
+                        <table class="notebook-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Due (₹)</th>
+                                    <th>Paid (₹)</th>
+                                    <th>Last Paid</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mgr-notebook-list">
+                                <!-- JS will populate this notebook table -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item active" onclick="switchManagerTab('home', this)">
+                    <i class="fas fa-chart-pie"></i><span>Panel</span>
+                </button>
+                <button class="nav-item" onclick="switchManagerTab('members', this)">
+                    <i class="fas fa-book-open"></i><span>Record Book</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- VERIFICATION PAGE (Manager) -->
+        <section id="verification-page" class="page hidden">
+            <header class="app-header">
+                <button onclick="navigate('manager-dashboard'); switchManagerTab('home', document.querySelector('.bottom-nav .nav-item:nth-child(1)'))" class="btn-icon"><i class="fas fa-arrow-left"></i></button>
+                <h2>Verify Payments</h2>
+            </header>
+            <div class="content"><div id="verification-list"></div></div>
+        </section>
+
+
+        <!-- STUDENT DASHBOARD -->
+        <section id="student-dashboard" class="page hidden">
+            <header class="app-header">
+                <h2 id="stu-header-name">MT App</h2>
+                <div class="header-dues">Dues: ₹<span id="header-dues-amount">0</span></div>
+            </header>
+            
+            <div class="student-content content">
+                <!-- TAB 1: HOME (Calendar) -->
+                <div id="stu-tab-home" class="stu-tab active">
+                    <div class="card">
+                        <div class="calendar-header">
+                            <button onclick="changeMonth(-1)" class="btn-icon text-main"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="month-year-display">July 2026</h3>
+                            <button onclick="changeMonth(1)" class="btn-icon text-main"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid" id="calendar-days"></div>
+                        <div class="tips-box mt-2">
+                            <small><b>Tips:</b> Tap a date to mark your meals. Green means selected.</small><br>
+                            <small><span class="meal-badge">B</span>=Breakfast, <span class="meal-badge">L</span>=Lunch, <span class="meal-badge">D</span>=Dinner</small>
+                        </div>
+                    </div>
+                    <div id="meal-manager-box" class="card hidden">
+                        <h3 id="selected-date-title">Meals for...</h3>
+                        <div class="meal-toggles" id="meal-toggles-container"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PAYMENTS -->
+                <div id="stu-tab-pay" class="stu-tab hidden">
+                    <div class="card">
+                        <h3>Pay Your Dues: ₹<span id="pay-dues-amount">0</span></h3>
+                        <div class="qr-box">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="UPI QR" width="120">
+                            <p>Scan to Pay Online</p>
+                        </div>
+                        <form id="payment-form">
+                            <input type="number" id="pay-amount" placeholder="Amount (₹)" required>
+                            <input type="text" id="pay-ref" placeholder="UPI Reference Number" required>
+                            <button type="submit" class="btn-primary">Submit Reference</button>
+                        </form>
+                    </div>
+                    <div class="card mt-2">
+                        <h3>Payment History</h3>
+                        <ul id="student-pay-history" class="history-list"></ul>
+                    </div>
+                </div>
+                
+                <!-- TAB 3: MEMBERS -->
+                <div id="stu-tab-members" class="stu-tab hidden">
+                    <div class="card">
+                        <h3><i class="fas fa-users"></i> Hostel Mates</h3>
+                        <p class="text-muted" style="margin-bottom: 15px; font-size:14px;">Members of <span id="stu-hostel-display" style="font-weight:bold;">---</span></p>
+                        <div id="stu-members-list" class="members-grid">
+                            <!-- Populated via JS (IDs are hidden) -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: PROFILE & SETTINGS -->
+                <div id="stu-tab-profile" class="stu-tab hidden">
+                    <div class="card profile-card">
+                        <div class="profile-img-container">
+                            <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="profile-img-display" alt="Profile" class="profile-img">
+                            <button class="edit-pic-btn" onclick="document.getElementById('profile-upload').click()"><i class="fas fa-camera"></i></button>
+                            <input type="file" id="profile-upload" accept="image/*" hidden onchange="uploadProfilePic(event)">
+                        </div>
+                        <h3 id="profile-name">Name</h3>
+                        <p>ID: <strong id="profile-id">---</strong></p>
+                        <p><i class="fas fa-phone"></i> <span id="profile-mob">---</span></p>
+                    </div>
+                    
+                    <div class="card mt-2 settings-menu">
+                        <h3><i class="fas fa-cog"></i> Settings</h3>
+                        <div class="setting-item">
+                            <span><i class="fas fa-moon"></i> Dark Mode</span>
+                            <label class="switch">
+                                <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item" style="cursor:pointer;" onclick="openPasswordModal()">
+                            <span class="text-main"><i class="fas fa-key"></i> Change Password</span>
+                        </div>
+                        <div class="setting-item" style="cursor:pointer;" onclick="logout()">
+                            <span class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Student Bottom Nav -->
+            <nav class="bottom-nav">
+                <button class="nav-item active" onclick="switchStudentTab('home', this)"><i class="fas fa-calendar-alt"></i><span>Home</span></button>
+                <button class="nav-item" onclick="switchStudentTab('pay', this)"><i class="fas fa-wallet"></i><span>Pay</span></button>
+                <button class="nav-item" onclick="switchStudentTab('members', this)"><i class="fas fa-users"></i><span>Members</span></button>
+                <button class="nav-item" onclick="switchStudentTab('profile', this)"><i class="fas fa-user"></i><span>Profile</span></button>
+            </nav>
+        </section>
+    </div>
+       <!-- 1. Pehle Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- 2. Phir aapki Firebase Setup File -->
+    <script src="firebase.js"></script>
+
+    <!-- 3. Aur end me aapki App Logic File -->
+    <script src="app.js"></script>
+</body>
+</html>
