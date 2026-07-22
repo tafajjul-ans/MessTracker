@@ -1,21 +1,26 @@
-const CACHE_NAME = 'mt-app-v1';
+const CACHE_NAME = 'mt-app-v3';
+
+// Sirf 3 main files cache karenge taaki image path ki wajah se crash na ho
 const urlsToCache = [
+  './',
   './index.html',
   './style.css',
-  './app.js',
-  './firebase.js',
-  './manifest.json',
-  './image/icon-192.png',
-  './image/icon-512.png'
+  './app.js'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Turant active karne ke liye
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        return cache.addAll(urlsToCache);
+        // Agar koi file missing hui toh bhi install cancel nahi hoga
+        return cache.addAll(urlsToCache).catch(err => console.log("Cache error, but continuing...", err));
       })
   );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', event => {
