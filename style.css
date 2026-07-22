@@ -119,3 +119,4 @@ input:checked + .slider:before { transform: translateX(24px); }
 .member-card { background: var(--member-bg); border: 1px solid var(--border); border-radius: 10px; padding: 15px; text-align: center; }
 .member-pic { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 10px; background: white;}
 .member-name { font-size: 14px; font-weight: 600; color: var(--text-main);}
+.btn-success { background: var(--success); }
