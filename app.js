@@ -1,4 +1,4 @@
-// Install Banner Logic (Always show if browser permits, no 24hr block)
+// Install Banner Logic
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -10,18 +10,13 @@ document.getElementById('btn-install').addEventListener('click', async () => {
     if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            document.getElementById('install-banner').classList.add('hidden');
-        }
+        if (outcome === 'accepted') { document.getElementById('install-banner').classList.add('hidden'); }
         deferredPrompt = null;
     }
 });
-
 document.getElementById('btn-close-install').addEventListener('click', () => {
-    // Just hides for this session, will come back on refresh if not installed
     document.getElementById('install-banner').classList.add('hidden');
 });
-
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
 
 // ==================== CLOUD DATABASE HELPERS ==================== //
@@ -29,9 +24,7 @@ const getDB = async (key) => {
     const snapshot = await window.db.ref(key).once('value');
     return snapshot.val() || (key === 'mt_payments' ? [] : {});
 };
-const saveDB = async (key, data) => {
-    await window.db.ref(key).set(data);
-};
+const saveDB = async (key, data) => { await window.db.ref(key).set(data); };
 
 // ==================== THEME MANAGEMENT ==================== //
 function applyTheme() {
@@ -48,25 +41,12 @@ function toggleDarkMode(checkbox) {
 }
 applyTheme();
 
-// ==================== INITIALIZE DB & AUTO-LOGIN ==================== //
-async function initDB() {
-    try {
-        const users = await getDB('mt_users');
-        if (Object.keys(users).length === 0) {
-            const defaultHostel = 'My Hostel';
-            const initUsers = {
-                'manager': { role: 'manager', name: 'Master Manager', password: '123', hostel: defaultHostel }
-            };
-            const settings = {};
-            settings[defaultHostel] = { meals: { B: 30, L: 50, D: 50 } };
-            
-            await saveDB('mt_users', initUsers);
-            await saveDB('mt_settings', settings);
-            await saveDB('mt_payments', []);
-            await saveDB('mt_meal_records', {});
-        }
-    } catch(err) { console.error("Initialization error: ", err); }
-}
+// ==================== SESSION MANAGEMENT ==================== //
+let loginRole = 'student';
+let currentUser = null;
+let currentCalDate = new Date();
+let selectedDateString = null;
+const defaultImg = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
 async function checkSession() {
     const savedId = localStorage.getItem('mt_session_id');
@@ -83,28 +63,13 @@ async function checkSession() {
                 if(savedRole === 'student') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
                 else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
 
-                if (loginRole === 'student') {
-                    if (currentUser.firstLogin) navigate('first-login-section');
-                    else { await loadStudentDashboard(); navigate('student-dashboard'); }
-                } else {
-                    await loadManagerDashboard(); navigate('manager-dashboard');
-                }
-            } else {
-                localStorage.removeItem('mt_session_id');
-                localStorage.removeItem('mt_session_role');
-            }
+                if (loginRole === 'student') { await loadStudentDashboard(); navigate('student-dashboard'); } 
+                else { await loadManagerDashboard(); navigate('manager-dashboard'); }
+            } else { logout(); }
         } catch(err) { console.error("Session check failed: ", err); }
     }
 }
-
-initDB().then(() => { checkSession(); });
-
-// ==================== NAV & AUTH ==================== //
-let loginRole = 'student';
-let currentUser = null;
-let currentCalDate = new Date();
-let selectedDateString = null;
-const defaultImg = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+checkSession();
 
 function navigate(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -116,11 +81,18 @@ function setLoginType(type, btn) {
     loginRole = type;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    document.getElementById('login-id').placeholder = type === 'manager' ? 'Enter Manager ID' : 'Enter Student ID';
     
     const regLink = document.getElementById('register-link-container');
     if(type === 'manager') regLink.classList.remove('hidden');
     else regLink.classList.add('hidden');
+    resetLoginUI();
+}
+
+function resetLoginUI() {
+    document.getElementById('phone-form').classList.remove('hidden');
+    document.getElementById('otp-form').classList.add('hidden');
+    document.getElementById('phone-form').reset();
+    document.getElementById('otp-form').reset();
 }
 
 function logout() { 
@@ -128,76 +100,105 @@ function logout() {
         currentUser = null; 
         localStorage.removeItem('mt_session_id');
         localStorage.removeItem('mt_session_role');
+        resetLoginUI();
         navigate('login-section'); 
-        document.getElementById('login-form').reset(); 
     }
 }
 
-function openPasswordModal() {
-    document.getElementById('password-modal').classList.remove('hidden');
-    document.getElementById('old-pass').value = '';
-    document.getElementById('new-pass').value = '';
-}
-function closePasswordModal() { document.getElementById('password-modal').classList.add('hidden'); }
-
-async function saveNewPassword() {
-    const oldP = document.getElementById('old-pass').value;
-    const newP = document.getElementById('new-pass').value;
-    if(oldP === '' || newP === '') return alert("Please fill both fields!");
-
-    try {
-        const users = await getDB('mt_users');
-        if(users[currentUser.id].password !== oldP) return alert("Incorrect Current Password!");
-        users[currentUser.id].password = newP;
-        await saveDB('mt_users', users);
-        alert("Password updated successfully!");
-        closePasswordModal();
-    } catch(err) { alert("Error: " + err.message); }
+// ==================== FIREBASE OTP AUTHENTICATION ==================== //
+function setupRecaptcha() {
+    if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
+    }
 }
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+document.getElementById('phone-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('login-id').value.trim();
-    const pass = document.getElementById('login-pass').value.trim();
+    const phoneInput = document.getElementById('login-mobile').value.trim();
     const btn = e.target.querySelector('button');
-    btn.innerText = "Loading..."; 
-    
+
     try {
+        btn.innerText = "Checking User...";
         const users = await getDB('mt_users');
-        if (users[id] && users[id].password === pass && users[id].role === loginRole) {
-            currentUser = { id, ...users[id] };
-            localStorage.setItem('mt_session_id', id);
-            localStorage.setItem('mt_session_role', loginRole);
+        let userFound = false;
+        let matchedId = null;
 
-            if (loginRole === 'student') {
-                if (currentUser.firstLogin) navigate('first-login-section');
-                else { await loadStudentDashboard(); navigate('student-dashboard'); }
-            } else {
-                await loadManagerDashboard(); navigate('manager-dashboard');
+        // DB me check karein ki kya user exist karta hai
+        for (let id in users) {
+            if (users[id].role === loginRole && users[id].mobile && users[id].mobile.includes(phoneInput.slice(-10))) {
+                userFound = true;
+                matchedId = id;
+                break;
             }
-        } else { alert('Invalid ID or Password!'); }
-    } catch(err) { alert("Database Error! " + err.message); } 
-    finally { btn.innerText = "Login"; }
+        }
+
+        if (!userFound) {
+            alert(`Mobile number not found! Ask manager to add you first.`);
+            btn.innerText = "Get OTP";
+            return;
+        }
+
+        btn.innerText = "Sending OTP...";
+        setupRecaptcha();
+
+        let formattedPhone = phoneInput;
+        if(formattedPhone.length === 10) formattedPhone = '+91' + formattedPhone;
+
+        window.confirmationResult = await firebase.auth().signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier);
+        
+        document.getElementById('phone-form').classList.add('hidden');
+        document.getElementById('otp-form').classList.remove('hidden');
+        window.tempMatchedId = matchedId; // ID save kar liya login ke liye
+
+    } catch (error) {
+        console.error(error);
+        alert("Error sending OTP: " + error.message);
+        if(window.recaptchaVerifier) {
+             window.recaptchaVerifier.clear();
+             window.recaptchaVerifier = null;
+        }
+    } finally {
+        if(!document.getElementById('phone-form').classList.contains('hidden')) {
+            btn.innerText = "Get OTP";
+        }
+    }
 });
 
-document.getElementById('first-login-form').addEventListener('submit', async (e) => {
+document.getElementById('otp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newPass = document.getElementById('new-first-pass').value.trim();
-    const users = await getDB('mt_users');
-    users[currentUser.id].password = newPass;
-    users[currentUser.id].firstLogin = false;
-    await saveDB('mt_users', users);
-    currentUser.firstLogin = false;
-    alert('Password updated successfully!');
-    await loadStudentDashboard();
-    navigate('student-dashboard');
+    const otp = document.getElementById('login-otp').value.trim();
+    const btn = e.target.querySelector('button');
+    btn.innerText = "Verifying...";
+
+    try {
+        await window.confirmationResult.confirm(otp); // Firebase OTP verify
+        
+        const id = window.tempMatchedId;
+        const users = await getDB('mt_users');
+
+        currentUser = { id, ...users[id] };
+        localStorage.setItem('mt_session_id', id);
+        localStorage.setItem('mt_session_role', loginRole);
+        resetLoginUI();
+
+        if (loginRole === 'student') { await loadStudentDashboard(); navigate('student-dashboard'); } 
+        else { await loadManagerDashboard(); navigate('manager-dashboard'); }
+
+    } catch (error) {
+        alert("Invalid OTP! Try again.");
+        btn.innerText = "Verify & Login";
+    }
 });
 
+
+// ==================== REGISTRATION ==================== //
 document.getElementById('manager-register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const mgrName = document.getElementById('reg-mgr-name').value.trim();
     const hostelName = document.getElementById('reg-hostel-name').value.trim();
-    const pass = document.getElementById('reg-mgr-pass').value.trim();
+    const mobile = document.getElementById('reg-mgr-mobile').value.trim();
     const btn = e.target.querySelector('button');
     btn.innerText = "Registering...";
 
@@ -209,25 +210,23 @@ document.getElementById('manager-register-form').addEventListener('submit', asyn
                 isHostelTaken = true; break;
             }
         }
-        if(isHostelTaken) {
-            alert(`Error: '${hostelName}' is already taken.`);
-            btn.innerText = "Register Now"; return;
-        }
+        if(isHostelTaken) { alert(`Error: '${hostelName}' is already taken.`); btn.innerText = "Register Now"; return; }
 
         const newMgrId = 'MGR' + Math.floor(1000 + Math.random() * 9000);
-        users[newMgrId] = { role: 'manager', name: mgrName, hostel: hostelName, password: pass };
+        users[newMgrId] = { role: 'manager', name: mgrName, hostel: hostelName, mobile: mobile };
         await saveDB('mt_users', users);
 
         const settings = await getDB('mt_settings');
         settings[hostelName] = { meals: { B: 30, L: 50, D: 50 } };
         await saveDB('mt_settings', settings);
 
-        alert(`Success!\nYour Manager ID is: ${newMgrId}\nPlease save it for login.`);
+        alert(`Success!\nHostel Created. You can now login with your Mobile Number!`);
         document.getElementById('manager-register-form').reset();
         navigate('login-section');
     } catch (err) { alert("Error: " + err.message); } 
     finally { btn.innerText = "Register Now"; }
 });
+
 
 // ==================== STUDENT DASHBOARD ==================== //
 async function switchStudentTab(tabName, btn) {
@@ -246,13 +245,10 @@ async function switchStudentTab(tabName, btn) {
 async function loadStudentDashboard() {
     const users = await getDB('mt_users');
     const me = users[currentUser.id];
-    const settings = await getDB('mt_settings');
-    const hostelSettings = settings[me.hostel] || { meals: { B: 0, L: 0, D: 0 } };
     
     document.getElementById('stu-header-name').innerText = me.name.split(' ')[0];
     document.getElementById('header-dues-amount').innerText = me.dues || 0;
     document.getElementById('pay-dues-amount').innerText = me.dues || 0;
-    
     document.getElementById('profile-name').innerText = me.name;
     document.getElementById('profile-id').innerText = currentUser.id;
     document.getElementById('profile-mob').innerText = me.mobile;
@@ -277,11 +273,7 @@ async function loadStudentDashboard() {
     membersGrid.innerHTML = '';
     for(let id in users) {
         if(users[id].role === 'student' && users[id].hostel === me.hostel) {
-            membersGrid.innerHTML += `
-                <div class="member-card">
-                    <img src="${users[id].profilePic || defaultImg}" class="member-pic" alt="DP">
-                    <div class="member-name">${users[id].name.split(' ')[0]}</div>
-                </div>`;
+            membersGrid.innerHTML += `<div class="member-card"><img src="${users[id].profilePic || defaultImg}" class="member-pic" alt="DP"><div class="member-name">${users[id].name.split(' ')[0]}</div></div>`;
         }
     }
     await renderCalendar();
@@ -297,7 +289,6 @@ function uploadProfilePic(event) {
             const users = await getDB('mt_users');
             users[currentUser.id].profilePic = base64Str;
             await saveDB('mt_users', users);
-            await loadStudentDashboard(); 
         };
         reader.readAsDataURL(file);
     }
@@ -408,7 +399,6 @@ async function loadManagerDashboard() {
     const settings = await getDB('mt_settings');
     const users = await getDB('mt_users');
     const payments = Array.isArray(await getDB('mt_payments')) ? await getDB('mt_payments') : [];
-
     const myHostelSettings = settings[currentUser.hostel] || { meals: { B: 0, L: 0, D: 0 } };
 
     document.getElementById('mgr-settings-hostel-name').innerText = currentUser.hostel;
@@ -422,9 +412,7 @@ async function loadManagerDashboard() {
 
     for (let key in users) {
         if (users[key].role === 'student' && users[key].hostel === currentUser.hostel) {
-            let totalPaid = 0;
-            let lastDate = 'N/A';
-            
+            let totalPaid = 0; let lastDate = 'N/A';
             const stuPayments = payments.filter(p => p.studentId === key && p.status === 'verified');
             if(stuPayments.length > 0) {
                 stuPayments.sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -439,7 +427,7 @@ async function loadManagerDashboard() {
                             <img src="${users[key].profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--border);">
                             <div style="line-height:1.2;">
                                 <span>${users[key].name.split(' ')[0]}</span><br>
-                                <small class="text-muted" style="font-size:11px;">${key}</small>
+                                <small class="text-muted" style="font-size:11px;">${users[key].mobile}</small>
                             </div>
                         </div>
                     </td>
@@ -463,13 +451,10 @@ document.getElementById('settings-form').addEventListener('submit', async (e) =>
     const settings = await getDB('mt_settings');
     if(!settings[currentUser.hostel]) settings[currentUser.hostel] = { meals: {} };
     settings[currentUser.hostel].meals = {
-        B: Number(document.getElementById('cost-b').value),
-        L: Number(document.getElementById('cost-l').value),
-        D: Number(document.getElementById('cost-d').value)
+        B: Number(document.getElementById('cost-b').value), L: Number(document.getElementById('cost-l').value), D: Number(document.getElementById('cost-d').value)
     };
     await saveDB('mt_settings', settings);
     alert('Costs Updated!');
-    await loadManagerDashboard();
 });
 
 document.getElementById('add-student-form').addEventListener('submit', async (e) => {
@@ -479,9 +464,14 @@ document.getElementById('add-student-form').addEventListener('submit', async (e)
     const newId = 'STU' + Math.floor(1000 + Math.random() * 9000);
     const users = await getDB('mt_users');
     
-    users[newId] = { role: 'student', name, mobile, password: '123', firstLogin: true, dues: 0, profilePic: '', hostel: currentUser.hostel };
+    // Check if mobile already exists
+    let exists = false;
+    for(let id in users) { if(users[id].mobile === mobile && users[id].role === 'student') exists = true; }
+    if(exists) return alert("This mobile number is already registered!");
+
+    users[newId] = { role: 'student', name, mobile, dues: 0, profilePic: '', hostel: currentUser.hostel };
     await saveDB('mt_users', users);
-    document.getElementById('generated-id-msg').innerText = `ID: ${newId} (Pass: 123)`;
+    document.getElementById('generated-id-msg').innerText = `Success! Tell student to login using their Mobile Number.`;
     document.getElementById('add-student-form').reset();
     await loadManagerDashboard();
 });
@@ -494,14 +484,13 @@ async function showVerificationList() {
     listDiv.innerHTML = '';
     
     const myPending = payments.filter(p => p.status === 'pending' && users[p.studentId] && users[p.studentId].hostel === currentUser.hostel);
-    
     if (myPending.length === 0) return listDiv.innerHTML = '<p class="text-muted">No pending payments.</p>';
 
     myPending.forEach(p => {
         const studentName = users[p.studentId] ? users[p.studentId].name : 'Unknown';
         listDiv.innerHTML += `
             <div class="card highlight-card mt-2" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border);">
-                <div><strong>${studentName} (${p.studentId})</strong><br><span class="text-muted">Amt: ₹${p.amount} | Ref: ${p.ref}</span></div>
+                <div><strong>${studentName}</strong><br><span class="text-muted">Amt: ₹${p.amount} | Ref: ${p.ref}</span></div>
                 <button onclick="verifyPayment('${p.id}')" class="btn-success btn-small" style="margin-left:auto;">Verify</button>
             </div>`;
     });
