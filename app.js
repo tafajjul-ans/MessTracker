@@ -11,11 +11,10 @@ async function hashPassword(password) {
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
-// Base64 encoding to secure details like Name & Mobile in Database
 function enc(text) { return text ? btoa(encodeURIComponent(text)) : text; }
 function dec(text) { 
     if(!text) return text;
-    try { return decodeURIComponent(atob(text)); } catch(e) { return text; } // Agar purana data un-encrypted hai toh wo break na ho
+    try { return decodeURIComponent(atob(text)); } catch(e) { return text; }
 }
 
 // ==================== CLOUD DATABASE HELPERS ==================== //
@@ -26,7 +25,10 @@ const saveDB = async (key, data) => { await window.db.ref(key).set(data); };
 function applyTheme() {
     const savedTheme = localStorage.getItem('mt_theme') || 'light'; const isDark = savedTheme === 'dark';
     if (isDark) { document.body.classList.remove('light-theme'); document.body.classList.add('dark-theme'); } else { document.body.classList.remove('dark-theme'); document.body.classList.add('light-theme'); }
-    const toggle = document.getElementById('dark-mode-toggle'); if (toggle) toggle.checked = isDark;
+    
+    // Sync toggles for both student and manager profile settings
+    const toggleStu = document.getElementById('dark-mode-toggle'); if (toggleStu) toggleStu.checked = isDark;
+    const toggleMgr = document.getElementById('mgr-dark-mode-toggle'); if (toggleMgr) toggleMgr.checked = isDark;
 }
 function toggleDarkMode(checkbox) { localStorage.setItem('mt_theme', checkbox.checked ? 'dark' : 'light'); applyTheme(); }
 applyTheme();
@@ -41,7 +43,6 @@ async function checkSession() {
         try {
             const users = await getDB('mt_users');
             if (users[savedId] && users[savedId].role === savedRole) {
-                // Decrypt details for local use
                 currentUser = { id: savedId, ...users[savedId], name: dec(users[savedId].name), mobile: dec(users[savedId].mobile) };
                 loginRole = savedRole;
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -104,6 +105,7 @@ document.getElementById('manager-register-form').addEventListener('submit', asyn
     e.preventDefault();
     const mgrName = document.getElementById('reg-mgr-name').value.trim();
     const hostelName = document.getElementById('reg-hostel-name').value.trim();
+    const mobile = document.getElementById('reg-mgr-mobile').value.trim();
     const pass = document.getElementById('reg-mgr-pass').value.trim();
     const btn = e.target.querySelector('button'); btn.innerText = "Registering...";
 
@@ -114,15 +116,13 @@ document.getElementById('manager-register-form').addEventListener('submit', asyn
         const hashedPass = await hashPassword(pass);
         const newMgrId = 'MGR' + Math.floor(1000 + Math.random() * 9000);
         
-        // Save encrypted name in DB
-        users[newMgrId] = { role: 'manager', name: enc(mgrName), hostel: hostelName, password: hashedPass };
+        users[newMgrId] = { role: 'manager', name: enc(mgrName), mobile: enc(mobile), hostel: hostelName, password: hashedPass };
         await saveDB('mt_users', users);
 
         const settings = await getDB('mt_settings'); settings[hostelName] = { meals: { B: 30, L: 50, D: 50 } }; await saveDB('mt_settings', settings);
 
-        // Show Success Page
         document.getElementById('success-id').innerText = newMgrId;
-        document.getElementById('success-pass').innerText = pass; // showing raw pass only once
+        document.getElementById('success-pass').innerText = pass;
         document.getElementById('manager-register-form').reset();
         navigate('registration-success-section');
 
@@ -171,15 +171,52 @@ async function loadStudentDashboard() {
         });
     }
 
-    // Members Grid Load
+    // Members Grid Load (Manager at Top, Then Students with "You" tags)
     const membersGrid = document.getElementById('stu-members-list'); membersGrid.innerHTML = '';
+    
+    // Find Manager first for this hostel
+    let hostelManager = null;
+    for(let id in users) {
+        if(users[id].role === 'manager' && users[id].hostel === currentUser.hostel) {
+            hostelManager = { id, ...users[id], name: dec(users[id].name), mobile: dec(users[id].mobile) };
+            break;
+        }
+    }
+
+    // 1. Render Manager Card at Top
+    if(hostelManager) {
+        membersGrid.innerHTML += `
+            <div class="member-card" style="border: 2px solid var(--primary); cursor:pointer;" onclick="openManagerContact('${hostelManager.name}', '${hostelManager.mobile || 'N/A'}', '${hostelManager.profilePic || defaultImg}')">
+                <span style="background:var(--primary); color:white; font-size:10px; padding:1px 6px; border-radius:4px; font-weight:bold; display:block; margin-bottom:4px;">Manager</span>
+                <img src="${hostelManager.profilePic || defaultImg}" class="member-pic">
+                <div class="member-name">${hostelManager.name.split(' ')[0]}</div>
+                <small class="text-muted" style="font-size:11px;">Tap to Call</small>
+            </div>`;
+    }
+
+    // 2. Render Student Cards
     for(let id in users) {
         if(users[id].role === 'student' && users[id].hostel === currentUser.hostel) {
             let memberName = dec(users[id].name);
-            membersGrid.innerHTML += `<div class="member-card"><img src="${users[id].profilePic || defaultImg}" class="member-pic"><div class="member-name">${memberName.split(' ')[0]}</div></div>`;
+            let isMe = (id === currentUser.id);
+            membersGrid.innerHTML += `
+                <div class="member-card" style="${isMe ? 'border: 2px solid var(--success);' : ''}">
+                    ${isMe ? '<span style="background:var(--success); color:white; font-size:10px; padding:1px 6px; border-radius:4px; font-weight:bold; display:block; margin-bottom:4px;">You</span>' : '<div style="height:17px; margin-bottom:4px;"></div>'}
+                    <img src="${users[id].profilePic || defaultImg}" class="member-pic">
+                    <div class="member-name">${memberName.split(' ')[0]}</div>
+                </div>`;
         }
     }
     await renderCalendar();
+}
+
+function openManagerContact(name, mobile, pic) {
+    document.getElementById('modal-mgr-pic').src = pic;
+    document.getElementById('modal-mgr-name').innerText = name;
+    const phoneLink = document.getElementById('modal-mgr-phone-link');
+    phoneLink.innerText = mobile;
+    phoneLink.href = `tel:${mobile}`;
+    document.getElementById('manager-contact-modal').classList.remove('hidden');
 }
 
 function uploadProfilePic(event) {
@@ -260,6 +297,7 @@ function switchManagerTab(tabName, btn) {
     document.querySelectorAll('.mgr-tab').forEach(t => { t.classList.add('hidden'); t.classList.remove('active'); });
     document.getElementById(`mgr-tab-${tabName}`).classList.remove('hidden'); document.getElementById(`mgr-tab-${tabName}`).classList.add('active');
     if(btn) { document.querySelectorAll('#manager-dashboard .nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+    if(tabName === 'profile') loadManagerProfileUI();
 }
 
 async function loadManagerDashboard() {
@@ -268,8 +306,10 @@ async function loadManagerDashboard() {
     document.getElementById('mgr-settings-hostel-name').innerText = currentUser.hostel;
     document.getElementById('cost-b').value = myHostelSettings.meals.B || 0; document.getElementById('cost-l').value = myHostelSettings.meals.L || 0; document.getElementById('cost-d').value = myHostelSettings.meals.D || 0;
     
+    // Record Book (Numbered Listing)
     const tbodyManager = document.getElementById('mgr-notebook-list'); tbodyManager.innerHTML = '';
-    
+    let serialNo = 1;
+
     for (let key in users) {
         if (users[key].role === 'student' && users[key].hostel === currentUser.hostel) {
             let totalPaid = 0;
@@ -279,11 +319,12 @@ async function loadManagerDashboard() {
 
             tbodyManager.innerHTML += `
                 <tr>
+                    <td><b>${serialNo++}</b></td>
                     <td>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <img src="${users[key].profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid var(--border);">
                             <div style="line-height:1.2;">
-                                <span>${sName.split(' ')[0]}</span><br>
+                                <span>${sName}</span><br>
                                 <small class="text-muted" style="font-size:11px;">${key}</small>
                             </div>
                         </div>
@@ -303,11 +344,37 @@ async function loadManagerDashboard() {
     else pendingCard.classList.add('hidden');
 }
 
+async function loadManagerProfileUI() {
+    const users = await getDB('mt_users');
+    const me = users[currentUser.id];
+    document.getElementById('mgr-profile-name').innerText = currentUser.name;
+    document.getElementById('mgr-profile-id').innerText = currentUser.id;
+    document.getElementById('mgr-profile-mob').innerText = currentUser.mobile || 'N/A';
+    document.getElementById('mgr-profile-img-display').src = me.profilePic || defaultImg;
+    applyTheme();
+}
+
+function uploadMgrProfilePic(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64Str = e.target.result;
+            document.getElementById('mgr-profile-img-display').src = base64Str;
+            const users = await getDB('mt_users');
+            users[currentUser.id].profilePic = base64Str;
+            await saveDB('mt_users', users);
+            alert("Manager Profile Picture Updated!");
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 // Remove Student Feature
 async function removeStudent(studentId) {
     if(confirm("Are you SURE you want to remove this student? All their data will be permanently deleted!")) {
         const users = await getDB('mt_users');
-        delete users[studentId]; // Student deleted from DB
+        delete users[studentId];
         await saveDB('mt_users', users);
         alert("Student removed successfully!");
         await loadManagerDashboard();
@@ -329,7 +396,6 @@ document.getElementById('add-student-form').addEventListener('submit', async (e)
     const users = await getDB('mt_users');
     
     const defaultHashedPass = await hashPassword('123');
-    // Save details as Encoded (Inscripted) Base64 string
     users[newId] = { role: 'student', name: enc(name), mobile: enc(mobile), password: defaultHashedPass, firstLogin: true, dues: 0, hostel: currentUser.hostel };
     await saveDB('mt_users', users);
     
