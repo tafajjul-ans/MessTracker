@@ -1040,8 +1040,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (currentUser.firstLogin) navigate('first-login-section'); 
                     else { await loadStudentDashboard(); navigate('student-dashboard'); } 
                 } else { await loadManagerDashboard(); navigate('manager-dashboard'); }
-            } else { showCustomAlert("Login Failed", "Invalid ID or Password!", "fa-times-circle"); }
-        } catch(err) { showCustomAlert("DB Error", err.message, "fa-times-circle"); } finally { hideLoader(); }
+            } else { 
+                hideLoader();
+                showCustomAlert("Login Failed", "Invalid ID or Password!", "fa-times-circle"); 
+            }
+        } catch(err) { 
+            hideLoader();
+            showCustomAlert("DB Error", err.message, "fa-times-circle"); 
+        } 
     });
 
     safeBind('first-login-form', 'submit', async (e) => {
