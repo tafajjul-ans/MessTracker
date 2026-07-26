@@ -201,7 +201,10 @@
                 </div>
 
                 <div id="mgr-tab-profile" class="mgr-tab hidden">
-                    <div class="card profile-card">
+                    <div class="card profile-card" style="position: relative;">
+                        <button onclick="toggleMgrProfileEdit()" class="btn-icon" style="position: absolute; top: 15px; right: 15px; background: var(--calendar-day-bg); border: 1px solid var(--border); border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--primary);">
+                            <i id="mgr-edit-icon" class="fas fa-pencil-alt"></i>
+                        </button>
                         <div class="profile-img-container">
                             <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="mgr-profile-img-display" class="profile-img">
                             <button class="edit-pic-btn" onclick="document.getElementById('mgr-profile-upload').click()"><i class="fas fa-camera"></i></button>
@@ -209,7 +212,25 @@
                         </div>
                         <h3 id="mgr-profile-name">Manager Name</h3>
                         <p>ID: <strong id="mgr-profile-id">---</strong></p>
+                        <p class="text-muted" style="margin-top: 5px; font-size: 13px;">Mobile: <strong id="mgr-profile-mob" style="color: var(--text-main);">---</strong></p>
                     </div>
+
+                    <div id="mgr-profile-edit-card" class="card mt-2 hidden">
+                        <h3><i class="fas fa-user-edit"></i> Edit Profile Details</h3>
+                        <form id="manager-profile-update-form">
+                            <label>Manager Name:</label>
+                            <input type="text" id="update-mgr-name" placeholder="Your Name" required>
+                            
+                            <label>Hostel Name (Must be Unique):</label>
+                            <input type="text" id="update-mgr-hostel" placeholder="Hostel Name" required>
+
+                            <label>Mobile Number:</label>
+                            <input type="tel" id="update-mgr-mobile" placeholder="Mobile Number" required>
+                            
+                            <button type="submit" class="btn-primary btn-small">Save Changes</button>
+                        </form>
+                    </div>
+
                     <div class="card mt-2 settings-menu">
                         <div class="setting-item"><span><i class="fas fa-moon"></i> Dark Mode</span><label class="switch"><input type="checkbox" id="mgr-dark-mode-toggle" onchange="toggleDarkMode(this)"><span class="slider round"></span></label></div>
                         <div class="setting-item" style="cursor:pointer;" onclick="openPasswordModal()">
@@ -246,7 +267,6 @@
             </header>
             <div class="content">
 
-                <!-- Selection Toolbar for Notifications -->
                 <div id="notif-selection-toolbar" class="hidden card" style="background: var(--card-bg); border: 1px solid var(--primary); display: flex; align-items: center; gap: 10px; padding: 10px 15px; margin-bottom: 15px; position: sticky; top: 10px; z-index: 10;">
                     <span id="selected-notif-count" style="font-weight: bold; color: var(--primary);">0 Selected</span>
                     <div style="margin-left: auto; display: flex; gap: 8px;">
@@ -320,7 +340,6 @@
                         </form>
                     </div>
                     <div class="card mt-2">
-                        <!-- Selection Toolbar for History -->
                         <div id="history-selection-toolbar" class="hidden" style="background: var(--card-bg); border: 1px solid var(--primary); display: flex; align-items: center; gap: 10px; padding: 10px 15px; margin-bottom: 15px; border-radius: 8px;">
                             <span id="selected-history-count" style="font-weight: bold; font-size:14px; color: var(--primary);">0 Selected</span>
                             <div style="margin-left: auto; display: flex; gap: 8px;">
@@ -351,7 +370,10 @@
                 </div>
                 
                 <div id="stu-tab-profile" class="stu-tab hidden">
-                    <div class="card profile-card">
+                    <div class="card profile-card" style="position: relative;">
+                        <button onclick="toggleStuProfileEdit()" class="btn-icon" style="position: absolute; top: 15px; right: 15px; background: var(--calendar-day-bg); border: 1px solid var(--border); border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--primary);">
+                            <i id="stu-edit-icon" class="fas fa-pencil-alt"></i>
+                        </button>
                         <div class="profile-img-container">
                             <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="profile-img-display" class="profile-img">
                             <button class="edit-pic-btn" onclick="document.getElementById('profile-upload').click()"><i class="fas fa-camera"></i></button>
@@ -359,7 +381,22 @@
                         </div>
                         <h3 id="profile-name">Name</h3>
                         <p>ID: <strong id="profile-id">---</strong></p>
+                        <p class="text-muted" style="margin-top: 5px; font-size: 13px;">Mobile: <strong id="profile-mob-display" style="color: var(--text-main);">---</strong></p>
                     </div>
+
+                    <div id="stu-profile-edit-card" class="card mt-2 hidden">
+                        <h3><i class="fas fa-user-edit"></i> Edit Profile Details</h3>
+                        <form id="student-profile-update-form">
+                            <label>Student Name:</label>
+                            <input type="text" id="update-stu-name" placeholder="Your Name" required>
+
+                            <label>Mobile Number:</label>
+                            <input type="tel" id="update-stu-mobile" placeholder="Mobile Number" required>
+                            
+                            <button type="submit" class="btn-primary btn-small">Save Changes</button>
+                        </form>
+                    </div>
+
                     <div class="card mt-2 settings-menu">
                         <div class="setting-item"><span><i class="fas fa-moon"></i> Dark Mode</span><label class="switch"><input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this)"><span class="slider round"></span></label></div>
                         <div class="setting-item" style="cursor:pointer;" onclick="openPasswordModal()"><span class="text-primary"><i class="fas fa-key"></i> Change Password</span></div>
@@ -385,25 +422,5 @@
     
     <script src="./firebase.js"></script>
     <script src="./app.js?v=3"></script>
-    <!-- Offline Screen Overlay -->
-<div id="offline-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #141308; z-index: 99999; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; color: #ffffff;">
-  <!-- App Logo -->
-  <img src="./image/icon-192.png" alt="Logo" style="width: 110px; height: 110px; margin-bottom: 24px;">
-  
-  <!-- Offline Text & Icon -->
-  <div style="display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 500;">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="1" y1="1" x2="23" y2="23"></line>
-      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
-      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
-      <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
-      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
-      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-      <line x1="12" y1="20" x2="12.01" y2="20"></line>
-    </svg>
-    <span>You're offline</span>
-  </div>
-</div>
-    
 </body>
 </html>
