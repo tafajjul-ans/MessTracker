@@ -123,6 +123,33 @@ const getDB = async (key) => {
 };
 const saveDB = async (key, data) => { if(!window.db) return; await window.db.ref(key).set(data); };
 
+// ==================== TOGGLE EDIT CARDS WITH ICON CHANGE ==================== //
+function toggleMgrProfileEdit() {
+    const card = document.getElementById('mgr-profile-edit-card');
+    const icon = document.getElementById('mgr-edit-icon');
+    if (card && icon) {
+        card.classList.toggle('hidden');
+        if (card.classList.contains('hidden')) {
+            icon.className = "fas fa-pencil-alt";
+        } else {
+            icon.className = "fas fa-times";
+        }
+    }
+}
+
+function toggleStuProfileEdit() {
+    const card = document.getElementById('stu-profile-edit-card');
+    const icon = document.getElementById('stu-edit-icon');
+    if (card && icon) {
+        card.classList.toggle('hidden');
+        if (card.classList.contains('hidden')) {
+            icon.className = "fas fa-pencil-alt";
+        } else {
+            icon.className = "fas fa-times";
+        }
+    }
+}
+
 // ==================== PHOTO CROPPER SYSTEM ==================== //
 function openCropper(file, target) {
     currentCropTarget = target;
@@ -584,9 +611,16 @@ async function loadStudentDashboard() {
         document.getElementById('stu-header-name').innerText = currentUser.name.split(' ')[0];
         document.getElementById('header-dues-amount').innerText = users[currentUser.id].dues || 0;
         document.getElementById('pay-dues-amount').innerText = users[currentUser.id].dues || 0;
+        
         document.getElementById('profile-name').innerText = currentUser.name;
         document.getElementById('profile-id').innerText = currentUser.id;
+        document.getElementById('profile-mob-display').innerText = currentUser.mobile || 'N/A';
         document.getElementById('profile-img-display').src = users[currentUser.id].profilePic || defaultImg;
+
+        const stuNameInput = document.getElementById('update-stu-name');
+        const stuMobileInput = document.getElementById('update-stu-mobile');
+        if (stuNameInput) stuNameInput.value = currentUser.name;
+        if (stuMobileInput) stuMobileInput.value = currentUser.mobile || '';
 
         const payments = await getDB('mt_payments');
         currentHistoryList = [];
@@ -663,6 +697,34 @@ async function loadStudentDashboard() {
         }
         await renderCalendar();
     } finally { hideLoader(); }
+}
+
+async function updateStudentProfileData(newName, newMobile) {
+    showLoader();
+    try {
+        const users = await getDB('mt_users');
+        users[currentUser.id].name = enc(newName);
+        users[currentUser.id].mobile = enc(newMobile);
+        await saveDB('mt_users', users);
+
+        currentUser.name = newName;
+        currentUser.mobile = newMobile;
+
+        document.getElementById('profile-name').innerText = newName;
+        document.getElementById('profile-mob-display').innerText = newMobile;
+        document.getElementById('stu-header-name').innerText = newName.split(' ')[0];
+
+        document.getElementById('stu-profile-edit-card').classList.add('hidden');
+        document.getElementById('stu-edit-icon').className = "fas fa-pencil-alt";
+
+        hideLoader();
+        await showCustomAlert("Success", "Profile updated successfully!", "fa-check-circle");
+        return true;
+    } catch (err) {
+        hideLoader();
+        await showCustomAlert("Error", err.message, "fa-times-circle");
+        return false;
+    }
 }
 
 function openManagerContact(name, mobile, pic) {
@@ -801,8 +863,76 @@ function sendWhatsAppBill(name, mobile, due, paid) {
 
 async function loadManagerProfileUI() {
     const users = await getDB('mt_users'); const me = users[currentUser.id];
-    document.getElementById('mgr-profile-name').innerText = currentUser.name; document.getElementById('mgr-profile-id').innerText = currentUser.id;
-    document.getElementById('mgr-profile-mob').innerText = currentUser.mobile || 'N/A'; document.getElementById('mgr-profile-img-display').src = me.profilePic || defaultImg; applyTheme();
+    document.getElementById('mgr-profile-name').innerText = currentUser.name; 
+    document.getElementById('mgr-profile-id').innerText = currentUser.id;
+    document.getElementById('mgr-profile-mob').innerText = currentUser.mobile || 'N/A'; 
+    document.getElementById('mgr-profile-img-display').src = (me && me.profilePic) ? me.profilePic : defaultImg; 
+    
+    const nameInput = document.getElementById('update-mgr-name');
+    const hostelInput = document.getElementById('update-mgr-hostel');
+    const mobileInput = document.getElementById('update-mgr-mobile');
+    
+    if (nameInput) nameInput.value = currentUser.name;
+    if (hostelInput) hostelInput.value = currentUser.hostel;
+    if (mobileInput) mobileInput.value = currentUser.mobile || '';
+
+    applyTheme();
+}
+
+async function updateManagerProfileData(newName, newHostel, newMobile) {
+    showLoader();
+    try {
+        const users = await getDB('mt_users');
+        const settings = await getDB('mt_settings');
+        
+        const trimmedHostel = newHostel.trim();
+        const oldHostel = currentUser.hostel;
+
+        for (let key in users) {
+            if (users[key].role === 'manager' && key !== currentUser.id) {
+                if (users[key].hostel && users[key].hostel.toLowerCase() === trimmedHostel.toLowerCase()) {
+                    hideLoader();
+                    await showCustomAlert("Error", `Hostel name '${trimmedHostel}' is already taken by another manager!`, "fa-exclamation-triangle");
+                    return false;
+                }
+            }
+        }
+
+        users[currentUser.id].name = enc(newName);
+        users[currentUser.id].mobile = enc(newMobile);
+        users[currentUser.id].hostel = trimmedHostel;
+
+        if (oldHostel !== trimmedHostel) {
+            if (settings[oldHostel]) {
+                settings[trimmedHostel] = settings[oldHostel];
+                delete settings[oldHostel];
+            } else {
+                settings[trimmedHostel] = { menu: "Welcome to Hostel! Menu updating soon...", meals: { B: 30, L: 50, D: 50 } };
+            }
+            await saveDB('mt_settings', settings);
+        }
+
+        await saveDB('mt_users', users);
+
+        currentUser.name = newName;
+        currentUser.mobile = newMobile;
+        currentUser.hostel = trimmedHostel;
+
+        document.getElementById('mgr-profile-name').innerText = newName;
+        document.getElementById('mgr-profile-mob').innerText = newMobile;
+        document.getElementById('mgr-settings-hostel-name').innerText = trimmedHostel;
+
+        document.getElementById('mgr-profile-edit-card').classList.add('hidden');
+        document.getElementById('mgr-edit-icon').className = "fas fa-pencil-alt";
+
+        hideLoader();
+        await showCustomAlert("Success", "Profile details updated successfully!", "fa-check-circle");
+        return true;
+    } catch (err) {
+        hideLoader();
+        await showCustomAlert("Error", err.message, "fa-times-circle");
+        return false;
+    }
 }
 
 async function removeStudent(studentId) {
@@ -960,6 +1090,23 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { showCustomAlert("Error", err.message, "fa-times-circle"); } finally { hideLoader(); }
     });
 
+    safeBind('manager-profile-update-form', 'submit', async (e) => {
+        e.preventDefault();
+        const newName = document.getElementById('update-mgr-name').value.trim();
+        const newHostel = document.getElementById('update-mgr-hostel').value.trim();
+        const newMobile = document.getElementById('update-mgr-mobile').value.trim();
+        if (!newName || !newHostel || !newMobile) return;
+        await updateManagerProfileData(newName, newHostel, newMobile);
+    });
+
+    safeBind('student-profile-update-form', 'submit', async (e) => {
+        e.preventDefault();
+        const newName = document.getElementById('update-stu-name').value.trim();
+        const newMobile = document.getElementById('update-stu-mobile').value.trim();
+        if (!newName || !newMobile) return;
+        await updateStudentProfileData(newName, newMobile);
+    });
+
     safeBind('settings-form', 'submit', async (e) => {
         e.preventDefault(); 
         showLoader();
@@ -1003,26 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendSmartNotification(currentUser.hostel, 'MGR', `New payment of ₹${amt} is pending verification from ${currentUser.name.split(' ')[0]}.`);
             await showCustomAlert("Submitted", "Payment submitted! Waiting for manager verification.", "fa-paper-plane");
             document.getElementById('payment-form').reset(); 
-            await loadManagerDashboard(); // Fixed to refresh correctly
+            await loadManagerDashboard();
         } finally { hideLoader(); }
     });
 });
-// Function to toggle Offline Screen
-function handleOfflineStatus() {
-  const offlineScreen = document.getElementById('offline-screen');
-  if (offlineScreen) {
-    if (!navigator.onLine) {
-      offlineScreen.style.display = 'flex';
-    } else {
-      offlineScreen.style.display = 'none';
-    }
-  }
-}
-
-// Network state listeners
-window.addEventListener('online', handleOfflineStatus);
-window.addEventListener('offline', handleOfflineStatus);
-
-// Check network on page load
-document.addEventListener('DOMContentLoaded', handleOfflineStatus);
-
