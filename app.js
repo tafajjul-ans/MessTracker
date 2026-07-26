@@ -1007,3 +1007,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { hideLoader(); }
     });
 });
+// Function to toggle Offline Screen
+function handleOfflineStatus() {
+  const offlineScreen = document.getElementById('offline-screen');
+  if (offlineScreen) {
+    if (!navigator.onLine) {
+      offlineScreen.style.display = 'flex';
+    } else {
+      offlineScreen.style.display = 'none';
+    }
+  }
+}
+
+// Network state listeners
+window.addEventListener('online', handleOfflineStatus);
+window.addEventListener('offline', handleOfflineStatus);
+
+// Check network on page load
+document.addEventListener('DOMContentLoaded', handleOfflineStatus);
+
