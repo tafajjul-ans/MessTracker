@@ -4,8 +4,8 @@
   "description": "Hostel Mess Management App",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f3f4f6",
-  "theme_color": "#4f46e5",
+  "background_color": "#141308",
+  "theme_color": "#141308",
   "icons": [
     {
       "src": "./image/icon-192.png",
