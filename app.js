@@ -615,92 +615,113 @@ async function loadStudentDashboard() {
         const users = await getDB('mt_users'); const settings = await getDB('mt_settings');
         const myHostelSettings = settings[currentUser.hostel] || {};
         
-        document.getElementById('stu-menu-display').innerText = myHostelSettings.menu || 'Manager has not updated the menu yet.';
-        document.getElementById('stu-header-name').innerText = currentUser.name.split(' ')[0];
-        document.getElementById('header-dues-amount').innerText = users[currentUser.id].dues || 0;
-        document.getElementById('pay-dues-amount').innerText = users[currentUser.id].dues || 0;
+        const menuEl = document.getElementById('stu-menu-display');
+        if(menuEl) menuEl.innerText = myHostelSettings.menu || 'Manager has not updated the menu yet.';
+
+        const headerNameEl = document.getElementById('stu-header-name');
+        if(headerNameEl) headerNameEl.innerText = currentUser.name ? currentUser.name.split(' ')[0] : 'User';
+
+        const duesEl = document.getElementById('header-dues-amount');
+        if(duesEl) duesEl.innerText = users[currentUser.id].dues || 0;
+
+        const payDuesEl = document.getElementById('pay-dues-amount');
+        if(payDuesEl) payDuesEl.innerText = users[currentUser.id].dues || 0;
         
-        document.getElementById('profile-name').innerText = currentUser.name;
-        document.getElementById('profile-id').innerText = currentUser.id;
-        document.getElementById('profile-mob-display').innerText = currentUser.mobile || 'N/A';
-        document.getElementById('profile-img-display').src = users[currentUser.id].profilePic || defaultImg;
+        const profileNameEl = document.getElementById('profile-name');
+        if(profileNameEl) profileNameEl.innerText = currentUser.name || '';
+
+        const profileIdEl = document.getElementById('profile-id');
+        if(profileIdEl) profileIdEl.innerText = currentUser.id || '';
+
+        const profileMobEl = document.getElementById('profile-mob-display');
+        if(profileMobEl) profileMobEl.innerText = currentUser.mobile || 'N/A';
+
+        const profileImgEl = document.getElementById('profile-img-display');
+        if(profileImgEl) profileImgEl.src = users[currentUser.id].profilePic || defaultImg;
 
         const stuNameInput = document.getElementById('update-stu-name');
+        if (stuNameInput) stuNameInput.value = currentUser.name || '';
+
         const stuMobileInput = document.getElementById('update-stu-mobile');
-        if (stuNameInput) stuNameInput.value = currentUser.name;
         if (stuMobileInput) stuMobileInput.value = currentUser.mobile || '';
 
         const payments = await getDB('mt_payments');
         currentHistoryList = [];
-        const historyUl = document.getElementById('student-pay-history'); historyUl.innerHTML = '';
-        let hasVisiblePayments = false;
+        const historyUl = document.getElementById('student-pay-history'); 
+        if(historyUl) {
+            historyUl.innerHTML = '';
+            let hasVisiblePayments = false;
 
-        payments.forEach(p => {
-            if(p.studentId === currentUser.id && !(p.deletedBy && p.deletedBy[currentUser.id])) {
-                currentHistoryList.push(p); hasVisiblePayments = true;
-                let color = p.status==='verified' ? 'var(--success)' : p.status==='rejected' ? 'var(--danger)' : '#f59e0b';
-                
-                historyUl.innerHTML = `
-                    <li id="hist-${p.id}" class="history-item" style="padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--card-bg);"
-                        ontouchstart="startPress(event, '${p.id}', 'history')" 
-                        ontouchmove="cancelPress()" 
-                        ontouchend="endPress()" 
-                        onmousedown="startPress(event, '${p.id}', 'history')" 
-                        onmouseup="endPress()" 
-                        onmouseleave="endPress()"
-                        onclick="toggleSelect('${p.id}', 'history')" 
-                        oncontextmenu="event.preventDefault();">
-                        
-                        <div class="select-checkbox"><i class="fas fa-check" style="color: #000;"></i></div>
-                        
-                        <div>
-                            <span style="font-weight: bold; font-size: 15px;">₹${p.amount}</span>
-                            <br><small class="text-muted" style="font-size: 11px;">${p.date}</small>
-                        </div>
-                        <span style="color: ${color}; font-weight:bold; font-size: 12px; padding-right:25px;">${p.status.toUpperCase()}</span>
-                    </li>` + historyUl.innerHTML;
-            }
-        });
-
-        if(!hasVisiblePayments) { historyUl.innerHTML = '<li style="text-align:center; padding:10px;"><span class="text-muted">No payment history.</span></li>'; }
-
-        const membersGrid = document.getElementById('stu-members-list'); membersGrid.innerHTML = '';
-        let hostelManager = null;
-        for(let id in users) { if(users[id].role === 'manager' && users[id].hostel === currentUser.hostel) { hostelManager = { id, ...users[id], name: dec(users[id].name), mobile: dec(users[id].mobile) }; break; } }
-        
-        let serialNo = 1;
-
-        if(hostelManager) {
-            membersGrid.innerHTML += `
-                <tr style="cursor:pointer; background: var(--calendar-day-bg);" onclick="openManagerContact('${hostelManager.name}', '${hostelManager.mobile || 'N/A'}', '${hostelManager.profilePic || defaultImg}')">
-                    <td><b>${serialNo++}</b></td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <img src="${hostelManager.profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">
-                            <div style="line-height:1.2;">
-                                <span style="font-weight:bold; color:var(--primary);">${hostelManager.name.split(' ')[0]}</span><br>
-                                <small class="text-muted" style="font-size:11px;">Tap to Call <i class="fas fa-phone"></i></small>
+            payments.forEach(p => {
+                if(p.studentId === currentUser.id && !(p.deletedBy && p.deletedBy[currentUser.id])) {
+                    currentHistoryList.push(p); hasVisiblePayments = true;
+                    let color = p.status==='verified' ? 'var(--success)' : p.status==='rejected' ? 'var(--danger)' : '#f59e0b';
+                    
+                    historyUl.innerHTML = `
+                        <li id="hist-${p.id}" class="history-item" style="padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--card-bg);"
+                            ontouchstart="startPress(event, '${p.id}', 'history')" 
+                            ontouchmove="cancelPress()" 
+                            ontouchend="endPress()" 
+                            onmousedown="startPress(event, '${p.id}', 'history')" 
+                            onmouseup="endPress()" 
+                            onmouseleave="endPress()"
+                            onclick="toggleSelect('${p.id}', 'history')" 
+                            oncontextmenu="event.preventDefault();">
+                            
+                            <div class="select-checkbox"><i class="fas fa-check" style="color: #000;"></i></div>
+                            
+                            <div>
+                                <span style="font-weight: bold; font-size: 15px;">₹${p.amount}</span>
+                                <br><small class="text-muted" style="font-size: 11px;">${p.date}</small>
                             </div>
-                        </div>
-                    </td>
-                    <td><span style="background:var(--primary); color:#000; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold;">Manager</span></td>
-                </tr>`;
+                            <span style="color: ${color}; font-weight:bold; font-size: 12px; padding-right:25px;">${p.status.toUpperCase()}</span>
+                        </li>` + historyUl.innerHTML;
+                }
+            });
+
+            if(!hasVisiblePayments) { historyUl.innerHTML = '<li style="text-align:center; padding:10px;"><span class="text-muted">No payment history.</span></li>'; }
         }
 
-        for(let id in users) {
-            if(users[id].role === 'student' && users[id].hostel === currentUser.hostel) {
-                let memberName = dec(users[id].name); let isMe = (id === currentUser.id);
+        const membersGrid = document.getElementById('stu-members-list'); 
+        if(membersGrid) {
+            membersGrid.innerHTML = '';
+            let hostelManager = null;
+            for(let id in users) { if(users[id].role === 'manager' && users[id].hostel === currentUser.hostel) { hostelManager = { id, ...users[id], name: dec(users[id].name), mobile: dec(users[id].mobile) }; break; } }
+            
+            let serialNo = 1;
+
+            if(hostelManager) {
                 membersGrid.innerHTML += `
-                    <tr style="${isMe ? 'background: rgba(253, 224, 71, 0.1);' : ''}">
+                    <tr style="cursor:pointer; background: var(--calendar-day-bg);" onclick="openManagerContact('${hostelManager.name}', '${hostelManager.mobile || 'N/A'}', '${hostelManager.profilePic || defaultImg}')">
                         <td><b>${serialNo++}</b></td>
                         <td>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <img src="${users[id].profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid ${isMe ? 'var(--primary)' : 'var(--border)'};">
-                                <div style="line-height:1.2;"><span>${memberName.split(' ')[0]}</span></div>
+                                <img src="${hostelManager.profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">
+                                <div style="line-height:1.2;">
+                                    <span style="font-weight:bold; color:var(--primary);">${hostelManager.name.split(' ')[0]}</span><br>
+                                    <small class="text-muted" style="font-size:11px;">Tap to Call <i class="fas fa-phone"></i></small>
+                                </div>
                             </div>
                         </td>
-                        <td>${isMe ? '<span style="background:var(--primary); color:#000; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold;">You</span>' : '<span style="font-size:12px; color:var(--text-muted);">Student</span>'}</td>
+                        <td><span style="background:var(--primary); color:#000; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold;">Manager</span></td>
                     </tr>`;
+            }
+
+            for(let id in users) {
+                if(users[id].role === 'student' && users[id].hostel === currentUser.hostel) {
+                    let memberName = dec(users[id].name); let isMe = (id === currentUser.id);
+                    membersGrid.innerHTML += `
+                        <tr style="${isMe ? 'background: rgba(253, 224, 71, 0.1);' : ''}">
+                            <td><b>${serialNo++}</b></td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <img src="${users[id].profilePic || defaultImg}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; border:1px solid ${isMe ? 'var(--primary)' : 'var(--border)'};">
+                                    <div style="line-height:1.2;"><span>${memberName.split(' ')[0]}</span></div>
+                                </div>
+                            </td>
+                            <td>${isMe ? '<span style="background:var(--primary); color:#000; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold;">You</span>' : '<span style="font-size:12px; color:var(--text-muted);">Student</span>'}</td>
+                        </tr>`;
+                }
             }
         }
         await renderCalendar();
