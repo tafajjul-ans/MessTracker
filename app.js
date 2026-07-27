@@ -511,7 +511,15 @@ async function checkSession() {
             showLoader();
             const users = await getDB('mt_users');
             if (users[savedId] && users[savedId].role === savedRole) {
-                currentUser = { id: savedId, ...users[savedId], name: dec(users[savedId].name), mobile: dec(users[savedId].mobile) };
+                const rawName = users[savedId].name || '';
+                const rawMobile = users[savedId].mobile || '';
+                
+                currentUser = { 
+                    id: savedId, 
+                    ...users[savedId], 
+                    name: dec(rawName), 
+                    mobile: dec(rawMobile) 
+                };
                 loginRole = savedRole;
                 
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1034,12 +1042,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const hashedInput = await hashPassword(pass); 
             const users = await getDB('mt_users');
             if (users && users[id] && users[id].password === hashedInput && users[id].role === loginRole) {
-                currentUser = { id, ...users[id], name: dec(users[id].name), mobile: dec(users[id].mobile) };
-                localStorage.setItem('mt_session_id', id); localStorage.setItem('mt_session_role', loginRole);
+                const rawName = users[id].name || '';
+                const rawMobile = users[id].mobile || '';
+
+                currentUser = { 
+                    id, 
+                    ...users[id], 
+                    name: dec(rawName), 
+                    mobile: dec(rawMobile) 
+                };
+                localStorage.setItem('mt_session_id', id); 
+                localStorage.setItem('mt_session_role', loginRole);
+                
                 if (loginRole === 'student') { 
-                    if (currentUser.firstLogin) navigate('first-login-section'); 
-                    else { await loadStudentDashboard(); navigate('student-dashboard'); } 
-                } else { await loadManagerDashboard(); navigate('manager-dashboard'); }
+                    if (currentUser.firstLogin) {
+                        navigate('first-login-section'); 
+                    } else { 
+                        await loadStudentDashboard(); 
+                        navigate('student-dashboard'); 
+                    } 
+                } else { 
+                    await loadManagerDashboard(); 
+                    navigate('manager-dashboard'); 
+                }
             } else { 
                 hideLoader();
                 showCustomAlert("Login Failed", "Invalid ID or Password!", "fa-times-circle"); 
