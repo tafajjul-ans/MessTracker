@@ -23,7 +23,6 @@ function safeBind(id, eventType, callback) {
     if (el) { el.addEventListener(eventType, callback); }
 }
 
-
 // ==================== APP INITIALIZATION ==================== //
 let deferredPrompt;
 
@@ -38,7 +37,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 let newServiceWorker;
 
 if ('serviceWorker' in navigator) { 
-    // आपके पुराने './sw.js' पाथ के साथ रजिस्ट्रेशन
+    // आपके पुराने './sw.js' पाथ के साथ सुरक्षित रजिस्ट्रेशन
     navigator.serviceWorker.register('./sw.js').then(reg => {
         
         // 1. अगर बैकग्राउंड में पहले से अपडेट डाउनलोड होकर वेट कर रहा है
@@ -47,7 +46,7 @@ if ('serviceWorker' in navigator) {
             triggerBlurUpdateScreen();
         }
 
-        // 2. अगर ऐप इस्तेमाल करते समय गिटहब/क्लाउडफ्लेयर से नया अपडेट डिटेक्ट होता है
+        // 2. अगर ऐप खुला होने के दौरान गिटहब/क्लाउडफ्लेयर से नया अपडेट आता है
         reg.addEventListener('updatefound', () => {
             const installingWorker = reg.installing;
             installingWorker.addEventListener('statechange', () => {
@@ -74,7 +73,10 @@ if ('serviceWorker' in navigator) {
 // स्क्रीन ब्लर करने और ब्लैक-येलो बॉक्स दिखाने का फंक्शन
 function triggerBlurUpdateScreen() {
     const overlay = document.getElementById('updateOverlay');
-    if(overlay) overlay.style.display = 'flex';
+    if(overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.pointerEvents = 'auto'; // अपडेट दिखने पर टच को चालू करेगा
+    }
 }
 
 // जब यूज़र "Update App Now" बटन दबाएगा (स्लाइडर एनीमेशन)
@@ -95,7 +97,7 @@ function runAppUpdate() {
             clearInterval(updateInterval);
             document.getElementById('updateTitle').innerText = "Finishing...";
             
-            // sw.js को SKIP_WAITING मैसेज भेजकर नया वर्जन लोड करवाना
+            // sw.js को SKIP_WAITING मैसेज भेजकर पुराना कैशे डिलीट करवाना
             if (newServiceWorker) {
                 newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
             } else {
@@ -104,6 +106,7 @@ function runAppUpdate() {
         }
     }, 100); 
 }
+
 
 // ==================== BRANDED LOADER & CUSTOM MODAL ==================== //
 function showLoader() { const l = document.getElementById('global-loader'); if (l) l.classList.remove('hidden'); }
