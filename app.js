@@ -767,7 +767,17 @@ async function renderCalendar() {
     const grid = document.getElementById('calendar-days'); const records = await getDB('mt_meal_records');
     const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth(); const today = new Date();
     document.getElementById('month-year-display').innerText = currentCalDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-    grid.innerHTML = ''; const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    grid.innerHTML = ''; // Grid khali kiya
+
+    // 👉 NAYA CODE: Yahan JS se direct days add kar diye bina HTML/CSS ko chhede!
+    const daysList = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    daysList.forEach(day => {
+        grid.innerHTML += `<div style="font-weight: 600; font-size: 13px; color: var(--primary); padding-bottom: 5px;">${day}</div>`;
+    });
+    // ==========================================
+
+    const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
 
     for (let i = 1; i <= daysInMonth; i++) {
@@ -781,6 +791,7 @@ async function renderCalendar() {
         grid.innerHTML += `<div class="cal-day ${isFut ? 'disabled' : ''}" onclick="selectDate('${dateStr}', this)">${i}<div class="meal-dots">${dots}</div></div>`;
     }
 }
+
 
 async function selectDate(dateStr, elem) {
     document.querySelectorAll('.cal-day').forEach(el => el.classList.remove('selected')); elem.classList.add('selected'); selectedDateString = dateStr;
