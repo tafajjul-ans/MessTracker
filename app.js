@@ -23,7 +23,10 @@ function safeBind(id, eventType, callback) {
     if (el) { el.addEventListener(eventType, callback); }
 }
 
+
 // ==================== APP INITIALIZATION ==================== //
+let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt', (e) => { 
     e.preventDefault(); 
     deferredPrompt = e; 
@@ -31,8 +34,75 @@ window.addEventListener('beforeinstallprompt', (e) => {
     if(banner) banner.classList.remove('hidden'); 
 });
 
+// ==================== PWA UPDATE LOGIC ==================== //
+let newServiceWorker;
+
 if ('serviceWorker' in navigator) { 
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Error", err)); 
+    // आपके पुराने './sw.js' पाथ के साथ रजिस्ट्रेशन
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+        
+        // 1. अगर बैकग्राउंड में पहले से अपडेट डाउनलोड होकर वेट कर रहा है
+        if (reg.waiting) {
+            newServiceWorker = reg.waiting;
+            triggerBlurUpdateScreen();
+        }
+
+        // 2. अगर ऐप इस्तेमाल करते समय गिटहब/क्लाउडफ्लेयर से नया अपडेट डिटेक्ट होता है
+        reg.addEventListener('updatefound', () => {
+            const installingWorker = reg.installing;
+            installingWorker.addEventListener('statechange', () => {
+                if (installingWorker.state === 'installed') {
+                    if (navigator.serviceWorker.controller) {
+                        newServiceWorker = installingWorker;
+                        triggerBlurUpdateScreen(); // स्क्रीन को ब्लर और पॉपअप शो करें
+                    }
+                }
+            });
+        });
+    }).catch(err => console.log("SW Error", err)); 
+
+    // नया सर्विस वर्कर एक्टिवेट होते ही पेज को तुरंत रीफ्रेश करें
+    let isRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!isRefreshing) {
+            window.location.reload();
+            isRefreshing = true;
+        }
+    });
+}
+
+// स्क्रीन ब्लर करने और ब्लैक-येलो बॉक्स दिखाने का फंक्शन
+function triggerBlurUpdateScreen() {
+    const overlay = document.getElementById('updateOverlay');
+    if(overlay) overlay.style.display = 'flex';
+}
+
+// जब यूज़र "Update App Now" बटन दबाएगा (स्लाइडर एनीमेशन)
+function runAppUpdate() {
+    document.getElementById('updateActionBtn').style.display = 'none';
+    document.getElementById('updateTitle').innerText = "Downloading...";
+    document.getElementById('updateMessage').innerText = "Installing the latest features.";
+    document.getElementById('sliderWrapper').style.display = 'block';
+    
+    let currentProgress = 0;
+    const sliderBar = document.getElementById('sliderBar');
+    
+    let updateInterval = setInterval(function() {
+        currentProgress += 5;
+        sliderBar.style.width = currentProgress + '%';
+        
+        if (currentProgress >= 100) {
+            clearInterval(updateInterval);
+            document.getElementById('updateTitle').innerText = "Finishing...";
+            
+            // sw.js को SKIP_WAITING मैसेज भेजकर नया वर्जन लोड करवाना
+            if (newServiceWorker) {
+                newServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+                window.location.reload();
+            }
+        }
+    }, 100); 
 }
 
 // ==================== BRANDED LOADER & CUSTOM MODAL ==================== //
