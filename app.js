@@ -43,13 +43,13 @@ function showCustomAlert(title, text, icon = 'fa-info-circle') {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
         if(!modal) { alert(text); return resolve(true); } 
-        
+
         document.getElementById('custom-modal-title').innerText = title;
         document.getElementById('custom-modal-text').innerText = text;
         document.getElementById('custom-modal-icon').innerHTML = `<i class="fas ${icon}"></i>`;
         document.getElementById('custom-modal-cancel').classList.add('hidden');
         document.getElementById('custom-modal-input').classList.add('hidden');
-        
+
         const okBtn = document.getElementById('custom-modal-ok');
         okBtn.innerText = "OK"; modal.classList.remove('hidden');
 
@@ -62,19 +62,19 @@ function showCustomConfirm(title, text) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
         if(!modal) { resolve(confirm(text)); return; } 
-        
+
         document.getElementById('custom-modal-title').innerText = title;
         document.getElementById('custom-modal-text').innerText = text;
         document.getElementById('custom-modal-icon').innerHTML = `<i class="fas fa-question-circle"></i>`;
         document.getElementById('custom-modal-input').classList.add('hidden');
-        
+
         const cancelBtn = document.getElementById('custom-modal-cancel'); cancelBtn.classList.remove('hidden');
         const okBtn = document.getElementById('custom-modal-ok'); okBtn.innerText = "Yes"; modal.classList.remove('hidden');
 
         const handleOk = () => { modal.classList.add('hidden'); cleanup(); resolve(true); };
         const handleCancel = () => { modal.classList.add('hidden'); cleanup(); resolve(false); };
         const cleanup = () => { okBtn.removeEventListener('click', handleOk); cancelBtn.removeEventListener('click', handleCancel); };
-        
+
         okBtn.addEventListener('click', handleOk); cancelBtn.addEventListener('click', handleCancel);
     });
 }
@@ -83,22 +83,22 @@ function showCustomPrompt(title, text, defaultVal = "") {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
         if(!modal) { resolve(prompt(text, defaultVal)); return; }
-        
+
         document.getElementById('custom-modal-title').innerText = title;
         document.getElementById('custom-modal-text').innerText = text;
         document.getElementById('custom-modal-icon').innerHTML = `<i class="fas fa-edit"></i>`;
-        
+
         const inputField = document.getElementById('custom-modal-input');
         inputField.classList.remove('hidden');
         inputField.value = defaultVal;
-        
+
         const cancelBtn = document.getElementById('custom-modal-cancel'); cancelBtn.classList.remove('hidden');
         const okBtn = document.getElementById('custom-modal-ok'); okBtn.innerText = "Save"; modal.classList.remove('hidden');
 
         const handleOk = () => { modal.classList.add('hidden'); cleanup(); resolve(inputField.value.trim()); };
         const handleCancel = () => { modal.classList.add('hidden'); cleanup(); resolve(null); };
         const cleanup = () => { okBtn.removeEventListener('click', handleOk); cancelBtn.removeEventListener('click', handleCancel); };
-        
+
         okBtn.addEventListener('click', handleOk); cancelBtn.addEventListener('click', handleCancel);
     });
 }
@@ -157,9 +157,9 @@ function openCropper(file, target) {
     reader.onload = (e) => {
         document.getElementById('cropper-image').src = e.target.result;
         document.getElementById('cropper-modal').classList.remove('hidden');
-        
+
         if (cropperInstance) { cropperInstance.destroy(); }
-        
+
         const image = document.getElementById('cropper-image');
         cropperInstance = new Cropper(image, {
             aspectRatio: 1,
@@ -220,12 +220,12 @@ async function openNotificationPage() {
     try {
         navigate('notification-page');
         isSelectMode = false; selectedNotifIds.clear(); 
-        
+
         const toolbar = document.getElementById('notif-selection-toolbar');
         if(toolbar) toolbar.classList.add('hidden');
         const listDiv = document.getElementById('page-notification-list');
         if(listDiv) listDiv.classList.remove('selection-active');
-        
+
         const notifs = await getDB('mt_notifications');
         const now = Date.now();
         currentNotifsList = [];
@@ -260,7 +260,7 @@ async function openNotificationPage() {
                 if(msgText.toLowerCase().includes('pending')) borderColor = 'var(--warning)';
 
                 const timeString = new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
+
                 activityListHtml = `
                     <div id="notif-${n.id}" class="card notif-item" style="border-left: 4px solid ${borderColor}; padding: 12px; margin-bottom: 10px; cursor:pointer;" 
                          ontouchstart="startPress(event, ${n.id}, 'notif')" 
@@ -280,7 +280,7 @@ async function openNotificationPage() {
         });
 
         if (updated) { await saveDB('mt_notifications', notifs); checkNotices(); }
-        
+
         document.getElementById('page-todays-notice-list').innerHTML = noticesListHtml || '<p class="text-muted">No active notice from manager.</p>';
         document.getElementById('page-notification-list').innerHTML = activityListHtml || '<p class="text-muted" style="text-align:center; padding: 15px 0;">No new payment updates.</p>';
     } finally { hideLoader(); }
@@ -289,10 +289,10 @@ async function openNotificationPage() {
 function startPress(e, id, type) {
     if(type === 'notif' && isSelectMode) return;
     if(type === 'history' && isHistorySelectMode) return;
-    
+
     pressTimer = setTimeout(() => {
         if(navigator.vibrate) navigator.vibrate(50);
-        
+
         if(type === 'notif') {
             isSelectMode = true;
             document.getElementById('notif-selection-toolbar').classList.remove('hidden');
@@ -377,13 +377,13 @@ async function exportSelectedNotifs() {
     if (typeof html2pdf === 'undefined') { return showCustomAlert("Error", "PDF library failed to load.", "fa-times-circle"); }
     const filename = await showCustomPrompt("Export PDF", "Enter file name:", "MessPayment_Notifications");
     if(!filename) return;
-    
+
     showLoader();
     try {
         const printDiv = document.createElement('div');
         printDiv.style.padding = '20px'; printDiv.style.fontFamily = 'Arial, sans-serif';
         printDiv.innerHTML = `<h2 style="color:#ca8a04; text-align:center;">${filename}</h2><p style="text-align:center; color:#666;">Generated via MessTracker</p><hr style="margin:20px 0;">`;
-        
+
         currentNotifsList.forEach(n => {
             if(selectedNotifIds.has(n.id)) {
                 const msgText = dec(n.message); 
@@ -395,7 +395,7 @@ async function exportSelectedNotifs() {
                     </div>`;
             }
         });
-        
+
         const opt = { margin: 10, filename: `${filename}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
         await html2pdf().set(opt).from(printDiv).save(); 
         cancelNotifSelection();
@@ -455,7 +455,7 @@ async function exportSelectedHistory() {
     if (typeof html2pdf === 'undefined') { return showCustomAlert("Error", "PDF library failed to load.", "fa-times-circle"); }
     const filename = await showCustomPrompt("Export PDF", "Enter file name:", "MessPayment_History");
     if(!filename) return;
-    
+
     showLoader();
     try {
         const printDiv = document.createElement('div');
@@ -506,14 +506,14 @@ async function checkSession() {
     try {
         const savedId = localStorage.getItem('mt_session_id'); 
         const savedRole = localStorage.getItem('mt_session_role');
-        
+
         if (savedId && savedRole) {
             showLoader();
             const users = await getDB('mt_users');
             if (users[savedId] && users[savedId].role === savedRole) {
                 const rawName = users[savedId].name || '';
                 const rawMobile = users[savedId].mobile || '';
-                
+
                 currentUser = { 
                     id: savedId, 
                     ...users[savedId], 
@@ -521,7 +521,7 @@ async function checkSession() {
                     mobile: dec(rawMobile) 
                 };
                 loginRole = savedRole;
-                
+
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 if(savedRole === 'student') {
                     const btn = document.querySelector('.tab-btn:nth-child(1)');
@@ -530,7 +530,7 @@ async function checkSession() {
                     const btn = document.querySelector('.tab-btn:nth-child(2)');
                     if(btn) btn.classList.add('active');
                 }
-                
+
                 if (loginRole === 'student') { 
                     if (currentUser.firstLogin) navigate('first-login-section'); 
                     else { await loadStudentDashboard(); navigate('student-dashboard'); } 
@@ -577,13 +577,13 @@ async function saveNewPassword() {
     const oldP = document.getElementById('old-pass').value; 
     const newP = document.getElementById('new-pass').value;
     if(!oldP || !newP) return showCustomAlert("Error", "Fill both fields!", "fa-exclamation-triangle");
-    
+
     showLoader();
     try {
         const hashedOld = await hashPassword(oldP); const hashedNew = await hashPassword(newP);
         const users = await getDB('mt_users');
         if(users[currentUser.id].password !== hashedOld) { return showCustomAlert("Error", "Incorrect Current Password!", "fa-times-circle"); }
-        
+
         users[currentUser.id].password = hashedNew;
         await saveDB('mt_users', users); 
         await showCustomAlert("Success", "Password Updated Successfully!", "fa-check-circle"); closePasswordModal();
@@ -602,7 +602,7 @@ function copyStudentId() {
 async function switchStudentTab(tabName, btn) {
     document.querySelectorAll('.stu-tab').forEach(t => { t.classList.add('hidden'); t.classList.remove('active'); });
     document.getElementById(`stu-tab-${tabName}`).classList.remove('hidden'); document.getElementById(`stu-tab-${tabName}`).classList.add('active');
-    
+
     if(btn) { document.querySelectorAll('#student-dashboard .nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
     if(tabName === 'home') await renderCalendar();
     if(tabName === 'pay') cancelHistorySelection();
@@ -614,7 +614,7 @@ async function loadStudentDashboard() {
         await checkNotices();
         const users = await getDB('mt_users'); const settings = await getDB('mt_settings');
         const myHostelSettings = settings[currentUser.hostel] || {};
-        
+
         const menuEl = document.getElementById('stu-menu-display');
         if(menuEl) menuEl.innerText = myHostelSettings.menu || 'Manager has not updated the menu yet.';
 
@@ -626,7 +626,7 @@ async function loadStudentDashboard() {
 
         const payDuesEl = document.getElementById('pay-dues-amount');
         if(payDuesEl) payDuesEl.innerText = users[currentUser.id].dues || 0;
-        
+
         const profileNameEl = document.getElementById('profile-name');
         if(profileNameEl) profileNameEl.innerText = currentUser.name || '';
 
@@ -656,7 +656,7 @@ async function loadStudentDashboard() {
                 if(p.studentId === currentUser.id && !(p.deletedBy && p.deletedBy[currentUser.id])) {
                     currentHistoryList.push(p); hasVisiblePayments = true;
                     let color = p.status==='verified' ? 'var(--success)' : p.status==='rejected' ? 'var(--danger)' : '#f59e0b';
-                    
+
                     historyUl.innerHTML = `
                         <li id="hist-${p.id}" class="history-item" style="padding: 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--card-bg);"
                             ontouchstart="startPress(event, '${p.id}', 'history')" 
@@ -687,7 +687,7 @@ async function loadStudentDashboard() {
             membersGrid.innerHTML = '';
             let hostelManager = null;
             for(let id in users) { if(users[id].role === 'manager' && users[id].hostel === currentUser.hostel) { hostelManager = { id, ...users[id], name: dec(users[id].name), mobile: dec(users[id].mobile) }; break; } }
-            
+
             let serialNo = 1;
 
             if(hostelManager) {
@@ -769,7 +769,7 @@ async function renderCalendar() {
     document.getElementById('month-year-display').innerText = currentCalDate.toLocaleString('default', { month: 'long', year: 'numeric' });
     grid.innerHTML = ''; const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
-    
+
     for (let i = 1; i <= daysInMonth; i++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isFut = new Date(year, month, i) > today; let dots = '';
@@ -789,7 +789,7 @@ async function selectDate(dateStr, elem) {
     const myMeals = (records[currentUser.id] && records[currentUser.id][dateStr]) || { B:false, L:false, D:false, guests: 0 };
     const mySet = settings[currentUser.hostel] || { meals: { B: 0, L: 0, D: 0 } };
     box.classList.remove('hidden'); document.getElementById('selected-date-title').innerText = `Meals on ${dateStr}`; container.innerHTML = '';
-    [{key:'B', n:'Breakfast', c:mySet.meals.B}, {key:'L', n:'Lunch', c:mySet.meals.L}, {key:'D', n:'Dinner', c:mySet.meals.D}].forEach(m => {
+    [{key:'B', n:'Breakfast', c:mySet.meals.B}, {key:'L', n:'Lunch', c:mySet.meals.D}, {key:'D', n:'Dinner', c:mySet.meals.D}].forEach(m => {
         if(m.c > 0) container.innerHTML += `<button class="meal-btn ${myMeals[m.key] ? 'active' : ''}" onclick="toggleMeal('${m.key}', ${m.c})">${m.key}<small>${m.n} (₹${m.c})</small></button>`;
     });
     document.getElementById('guest-count').innerText = myMeals.guests || 0;
@@ -853,7 +853,7 @@ async function loadManagerDashboard() {
         document.getElementById('mgr-settings-hostel-name').innerText = currentUser.hostel;
         document.getElementById('mgr-menu-input').value = myHostelSettings.menu || '';
         document.getElementById('cost-b').value = myHostelSettings.meals.B || 0; document.getElementById('cost-l').value = myHostelSettings.meals.L || 0; document.getElementById('cost-d').value = myHostelSettings.meals.D || 0;
-        
+
         const tbodyManager = document.getElementById('mgr-notebook-list'); tbodyManager.innerHTML = ''; let serialNo = 1;
         for (let key in users) {
             if (users[key].role === 'student' && users[key].hostel === currentUser.hostel) {
@@ -896,11 +896,11 @@ async function loadManagerProfileUI() {
     document.getElementById('mgr-profile-id').innerText = currentUser.id;
     document.getElementById('mgr-profile-mob').innerText = currentUser.mobile || 'N/A'; 
     document.getElementById('mgr-profile-img-display').src = (me && me.profilePic) ? me.profilePic : defaultImg; 
-    
+
     const nameInput = document.getElementById('update-mgr-name');
     const hostelInput = document.getElementById('update-mgr-hostel');
     const mobileInput = document.getElementById('update-mgr-mobile');
-    
+
     if (nameInput) nameInput.value = currentUser.name;
     if (hostelInput) hostelInput.value = currentUser.hostel;
     if (mobileInput) mobileInput.value = currentUser.mobile || '';
@@ -913,7 +913,7 @@ async function updateManagerProfileData(newName, newHostel, newMobile) {
     try {
         const users = await getDB('mt_users');
         const settings = await getDB('mt_settings');
-        
+
         const trimmedHostel = newHostel.trim();
         const oldHostel = currentUser.hostel;
 
@@ -1004,19 +1004,19 @@ async function processPayment(paymentId, status) {
     try {
         const payments = await getDB('mt_payments'); const users = await getDB('mt_users');
         const pIndex = payments.findIndex(p => p.id === paymentId);
-        
+
         if(pIndex > -1) {
             payments[pIndex].status = status;
             const sId = payments[pIndex].studentId;
             const amt = payments[pIndex].amount;
             if(status === 'verified') { if(users[sId]) users[sId].dues = (users[sId].dues || 0) - amt; }
-            
+
             await saveDB('mt_payments', payments); await saveDB('mt_users', users);
-            
+
             let notifyMsg = `Your payment of ₹${amt} was ${status.toUpperCase()}.`;
             if(remark) notifyMsg += ` Remark: ${remark}`;
             await sendSmartNotification(currentUser.hostel, sId, notifyMsg);
-            
+
             await showVerificationList(); await loadManagerDashboard();
         }
     } finally { hideLoader(); }
@@ -1026,7 +1026,7 @@ async function processPayment(paymentId, status) {
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
     checkSession();
-    
+
     safeBind('btn-crop-cancel', 'click', () => {
         document.getElementById('cropper-modal').classList.add('hidden');
         if (cropperInstance) cropperInstance.destroy();
@@ -1043,10 +1043,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const users = await getDB('mt_users');
             users[currentUser.id].profilePic = base64Str;
             await saveDB('mt_users', users);
-            
+
             if (currentCropTarget === 'student') { document.getElementById('profile-img-display').src = base64Str; } 
             else if (currentCropTarget === 'manager') { document.getElementById('mgr-profile-img-display').src = base64Str; }
-            
+
             document.getElementById('cropper-modal').classList.add('hidden');
             cropperInstance.destroy();
             await showCustomAlert("Success", "Profile Picture Updated!", "fa-check-circle");
@@ -1074,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('mt_session_id', id); 
                 localStorage.setItem('mt_session_role', loginRole);
-                
+
                 if (loginRole === 'student') { 
                     if (currentUser.firstLogin) {
                         navigate('first-login-section'); 
@@ -1206,5 +1206,4 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { hideLoader(); }
     });
 });
-
-// End //
+// END
