@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mt-app-v9.0.7.1';
+const CACHE_NAME = 'mt-app-v9.0.7.2';
 
 const urlsToCache = [
   './',
