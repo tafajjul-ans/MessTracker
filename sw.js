@@ -30,3 +30,10 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
+// नए अपडेट को बिना इंतज़ार किए तुरंत एक्टिवेट करने के लिए
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
