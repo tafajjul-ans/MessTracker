@@ -1202,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendSmartNotification(currentUser.hostel, 'MGR', `New payment of ₹${amt} is pending verification from ${currentUser.name.split(' ')[0]}.`);
             await showCustomAlert("Submitted", "Payment submitted! Waiting for manager verification.", "fa-paper-plane");
             document.getElementById('payment-form').reset(); 
-            await loadManagerDashboard();
+            await loadStudentDashboard();
         } finally { hideLoader(); }
     });
 });
