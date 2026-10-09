@@ -23,7 +23,6 @@ function safeBind(id, eventType, callback) {
     if (el) { el.addEventListener(eventType, callback); }
 }
 
-
 // ==================== APP INITIALIZATION ==================== //
 window.addEventListener('beforeinstallprompt', (e) => { 
     e.preventDefault(); 
@@ -35,8 +34,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
 if ('serviceWorker' in navigator) { 
     navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Error", err)); 
 }
-
-
 
 // ==================== BRANDED LOADER & CUSTOM MODAL ==================== //
 function showLoader() { const l = document.getElementById('global-loader'); if (l) l.classList.remove('hidden'); }
@@ -792,7 +789,7 @@ async function selectDate(dateStr, elem) {
     const myMeals = (records[currentUser.id] && records[currentUser.id][dateStr]) || { B:false, L:false, D:false, guests: 0 };
     const mySet = settings[currentUser.hostel] || { meals: { B: 0, L: 0, D: 0 } };
     box.classList.remove('hidden'); document.getElementById('selected-date-title').innerText = `Meals on ${dateStr}`; container.innerHTML = '';
-    [{key:'B', n:'Breakfast', c:mySet.meals.B}, {key:'L', n:'Lunch', c:mySet.meals.D}, {key:'D', n:'Dinner', c:mySet.meals.D}].forEach(m => {
+    [{key:'B', n:'Breakfast', c:mySet.meals.B}, {key:'L', n:'Lunch', c:mySet.meals.L}, {key:'D', n:'Dinner', c:mySet.meals.D}].forEach(m => {
         if(m.c > 0) container.innerHTML += `<button class="meal-btn ${myMeals[m.key] ? 'active' : ''}" onclick="toggleMeal('${m.key}', ${m.c})">${m.key}<small>${m.n} (₹${m.c})</small></button>`;
     });
     document.getElementById('guest-count').innerText = myMeals.guests || 0;
