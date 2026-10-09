@@ -121,3 +121,16 @@ input:checked + .slider:before { transform: translateX(20px); background-color: 
 .select-checkbox { display: none; position: absolute; top: 50%; right: 10px; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--primary); align-items: center; justify-content: center; color: transparent; transition: 0.2s; pointer-events: none; }
 .selection-active .select-checkbox { display: flex; }
 .notif-item.selected .select-checkbox, .history-item.selected .select-checkbox { background: var(--primary); color: #000; }
+
+/* NEWLY ADDED CODE */
+.calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+}
+/* END */
